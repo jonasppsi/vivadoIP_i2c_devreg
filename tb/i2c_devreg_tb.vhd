@@ -31,6 +31,9 @@ library work;
 -- Entity Declaration
 ------------------------------------------------------------
 entity i2c_devreg_tb is
+	generic (
+		InternalTriState_g : boolean := true
+	);
 end entity;
 
 ------------------------------------------------------------
@@ -41,7 +44,6 @@ architecture sim of i2c_devreg_tb is
 	constant ClockFrequency_g : real := 125.0e6;
 	constant I2cFrequency_g : real := 1.0e6;
 	constant UpdatePeriod_g : real := 500.0e-6;
-	constant InternalTriState_g : boolean := true;
 	constant NumOfReg_g : integer := 3;
 	
 	-- *** Not Assigned Generics (default values) ***
@@ -124,31 +126,30 @@ architecture sim of i2c_devreg_tb is
 	constant DATA32			: integer := 16#34353637#;
 	
 	-- ROM Contents
-	constant ROM_NOMUX_NOCMD_1DATA : FromRom_t :=  (	
-		Vld => 'X', HasMux => '0',  MuxAddr => (others => 'X'), MuxValue => (others => 'X'), DevAddr => AddrSlv(SLAVE_ADDR),  
+	constant ROM_NOMUX_NOCMD_1DATA : CfgRomEntry_t :=  (	
+		HasMux => '0',  MuxAddr => (others => 'X'), MuxValue => (others => 'X'), DevAddr => AddrSlv(SLAVE_ADDR),  
 		CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 1, AutoRead => '1');
 
-	constant ROM_1MUX_NOCMD_1DATA : FromRom_t := (
-		Vld => 'X', HasMux => '1',  MuxAddr => AddrSlv(MUX_ADDR), MuxValue => MUX_VAL_SLV, DevAddr => AddrSlv(SLAVE_ADDR),  
+	constant ROM_1MUX_NOCMD_1DATA : CfgRomEntry_t := (
+		HasMux => '1',  MuxAddr => AddrSlv(MUX_ADDR), MuxValue => MUX_VAL_SLV, DevAddr => AddrSlv(SLAVE_ADDR),  
 		CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 1, AutoRead => '1');
 		
-	constant ROM_NOMUX_1CMD_1DATA : FromRom_t := (
-		Vld => 'X', HasMux => '0',  MuxAddr => (others => 'X'), MuxValue => (others => 'X'), DevAddr => AddrSlv(SLAVE_ADDR),  
+	constant ROM_NOMUX_1CMD_1DATA : CfgRomEntry_t := (
+		HasMux => '0',  MuxAddr => (others => 'X'), MuxValue => (others => 'X'), DevAddr => AddrSlv(SLAVE_ADDR),  
 		CmdBytes => 1, CmdData => CMD_BYTES(1), DatBytes => 1, AutoRead => '1');
 
-	constant ROM_1MUX_2CMD_1DATA : FromRom_t := (
-		Vld => 'X', HasMux => '1',  MuxAddr => AddrSlv(MUX_ADDR), MuxValue => MUX_VAL_SLV, DevAddr => AddrSlv(SLAVE_ADDR),  
+	constant ROM_1MUX_2CMD_1DATA : CfgRomEntry_t := (
+		HasMux => '1',  MuxAddr => AddrSlv(MUX_ADDR), MuxValue => MUX_VAL_SLV, DevAddr => AddrSlv(SLAVE_ADDR),  
 		CmdBytes => 2, CmdData => CMD_BYTES(2), DatBytes => 1, AutoRead => '1');
 		
-	constant ROM_NOMUX_NOCMD_4DATA : FromRom_t := (
-		Vld => 'X', HasMux => '0',  MuxAddr => (others => 'X'), MuxValue => (others => 'X'), DevAddr => AddrSlv(SLAVE_ADDR),  
+	constant ROM_NOMUX_NOCMD_4DATA : CfgRomEntry_t := (
+		HasMux => '0',  MuxAddr => (others => 'X'), MuxValue => (others => 'X'), DevAddr => AddrSlv(SLAVE_ADDR),  
 		CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 4, AutoRead => '1');
 		
-	constant ROM_UNUSED : FromRom_t := (
-		Vld => 'X', HasMux => '0',  MuxAddr => (others => 'X'), MuxValue => (others => 'X'), DevAddr => (others => 'X'),
+	constant ROM_UNUSED : CfgRomEntry_t := (
+		HasMux => '0',  MuxAddr => (others => 'X'), MuxValue => (others => 'X'), DevAddr => (others => 'X'),
 		CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 0, AutoRead => '0');
 	
-	type CfgRom_t is array (natural range <>) of FromRom_t;
 	shared variable CfgRom : CfgRom_t(0 to 2**log2ceil(NumOfReg_g)-1) := (others => ROM_UNUSED);
 	
 	-- *** Slave Procedures ***
@@ -358,7 +359,7 @@ begin
 		-- 1 Byte, no Mux, with command bytes
 		for i in 1 to 4 loop
 			wait for 5 us;
-			CfgRom(1) := (	Vld => 'X', HasMux => '0',  MuxAddr => (others => 'X'), MuxValue => (others => 'X'), DevAddr => AddrSlv(SLAVE_ADDR),  
+			CfgRom(1) := (	HasMux => '0',  MuxAddr => (others => 'X'), MuxValue => (others => 'X'), DevAddr => AddrSlv(SLAVE_ADDR),  
 							CmdBytes => i, CmdData => CMD_BYTES(i), DatBytes => 1, AutoRead => '1');
 			PulseSig(UpdateTrig, Clk);
 			wait for 1 us;
@@ -937,9 +938,8 @@ begin
 	begin
 		if rising_edge(Clk) then
 			FromRom1.Vld <= '0';
-			if ToRom.Vld = '1' then
-				FromRom1 <= CfgRom(to_integer(unsigned(ToRom.Addr)));
-				FromRom1.Vld <= '1';
+			if ToRom.Vld = '1' then				
+				FromRom1 <= EntryToFromRom(CfgRom(to_integer(unsigned(ToRom.Addr))), '1');
 			end if;
 			FromRom <= FromRom1;
 		end if;

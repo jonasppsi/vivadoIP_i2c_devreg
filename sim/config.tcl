@@ -9,7 +9,7 @@ set LibPath "../../.."
 namespace import psi::sim::*
 
 #Set library
-psi::sim::add_library spi_simple
+psi::sim::add_library devreg
 
 #suppress messages
 psi::sim::compile_suppress 135,1236,1370
@@ -25,6 +25,8 @@ psi::sim::add_sources "$LibPath/VHDL/psi_common/hdl" {
 	psi_common_sdp_ram.vhd \
 	psi_common_sync_fifo.vhd \
 	psi_common_i2c_master.vhd \
+	psi_common_pl_stage.vhd \
+	psi_common_axi_slave_ipif.vhd \
 } -tag lib
 
 # psi_tb_v1_0	
@@ -39,6 +41,7 @@ psi::sim::add_sources "$LibPath/VHDL/psi_tb/hdl" {
 psi::sim::add_sources "../hdl" {
 	i2c_devreg_pkg.vhd \
 	i2c_devreg.vhd \
+	i2c_devreg_vivado_wrp.vhd \
 } -tag src
 
 #testbenches
@@ -48,4 +51,7 @@ psi::sim::add_sources "../tb" {
 	
 #TB Runs
 psi::sim::create_tb_run "i2c_devreg_tb"
+tb_run_add_arguments \
+	"-gInternalTriState_g=true" \
+	"-gInternalTriState_g=false"
 psi::sim::add_tb_run

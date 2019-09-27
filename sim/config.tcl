@@ -22,6 +22,8 @@ psi::sim::add_sources "$LibPath/VHDL/psi_common/hdl" {
 	psi_common_logic_pkg.vhd \
 	psi_common_bit_cc.vhd \
 	psi_common_tdp_ram.vhd  \
+	psi_common_sdp_ram.vhd \
+	psi_common_sync_fifo.vhd \
 	psi_common_i2c_master.vhd \
 } -tag lib
 

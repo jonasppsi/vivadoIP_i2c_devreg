@@ -44,8 +44,10 @@ entity i2c_devreg is
 		Rst				: in	std_logic;	    -- $$ type=rst; clk=Clk $$
 		
 		-- Config Rom Interface
-		ToRom			: out	ToRom_t;
-		FromRom			: in	FromRom_t;
+		ToRomVld		: out	std_logic;
+		ToRomAddr		: out	std_logic_vector(log2ceil(NumOfReg_g)-1 downto 0);
+		FromRomVld		: in	std_logic;
+		FromRomEntry	: in	CfgRomEntry_t;
 		
 		-- Parallel Interface
 		UpdateTrig		: in	std_logic;
@@ -103,8 +105,9 @@ architecture rtl of i2c_devreg is
 		UpdatePending	: std_logic;
 		Fsm				: Fsm_t;
 		FsmNext			: Fsm_t;
-		ToRom			: ToRom_t;
-		FromRom			: FromRom_t;
+		ToRomAddr		: std_logic_vector(RomAddrBits_c-1 downto 0);
+		ToRomVld		: std_logic;
+		RomEntry		: CfgRomEntry_t;
 		I2cCmdVld		: std_logic;
 		I2cCmdType		: std_logic_vector(2 downto 0);
 		I2cCmdData		: std_logic_vector(7 downto 0);
@@ -142,7 +145,7 @@ begin
 	--------------------------------------------------------------------------
 	-- Combinatorial Proccess
 	--------------------------------------------------------------------------
-	p_comb : process(	r, FromRom, UpdateTrig, UpdateEna, 
+	p_comb : process(	r, FromRomVld, FromRomEntry, UpdateTrig, UpdateEna, 
 						I2cCmdRdy, I2cRspVld, I2cRspType, I2cRspData, I2cRspAck, I2cRspArbLost, I2cRspSeq, 
 						FifoEmptyI, FifoAddr, FifoIsRead, FifoData)
 		variable v : two_process_r;
@@ -166,7 +169,7 @@ begin
 		end if;
 		
 		-- *** Default Values ***
-		v.ToRom.Vld		:= '0';
+		v.ToRomVld		:= '0';
 		v.RamWr			:= '0';
 		v.UpdateDone	:= '0';
 		v.FifoPop		:= '0';
@@ -192,22 +195,20 @@ begin
 				v.IsWriteAccess := '0';
 				-- User triggered operations have priority
 				if FifoEmptyI = '0' then
-					v.ToRom.Vld								:= '1';
-					v.ToRom.Addr							:= (others => '0');
-					v.ToRom.Addr(RomAddrBits_c-1 downto 0)	:= FifoAddr;
-					v.Fsm 									:= RomData_s;
-					v.WriteData								:= FifoData;
-					v.IsFifoOperation						:= '1';
-					v.IsWriteAccess							:= not FifoIsRead;
+					v.ToRomVld			:= '1';
+					v.ToRomAddr			:= FifoAddr;
+					v.Fsm 				:= RomData_s;
+					v.WriteData			:= FifoData;
+					v.IsFifoOperation	:= '1';
+					v.IsWriteAccess		:= not FifoIsRead;
 				-- Start Update Access
 				elsif r.UpdatePending = '1' then
 					-- Next update
 					if r.RomAddr /= NumOfReg_g then
-						v.ToRom.Vld								:= '1';
-						v.ToRom.Addr							:= (others => '0');
-						v.ToRom.Addr(RomAddrBits_c-1 downto 0)	:= std_logic_vector(to_unsigned(r.RomAddr, RomAddrBits_c));
-						v.Fsm 									:= RomData_s;
-						v.RomAddr 								:= r.RomAddr + 1;
+						v.ToRomVld	:= '1';
+						v.ToRomAddr	:= std_logic_vector(to_unsigned(r.RomAddr, RomAddrBits_c));
+						v.Fsm 		:= RomData_s;
+						v.RomAddr 	:= r.RomAddr + 1;
 					else
 						-- update is done, go back to idle
 						v.UpdatePending := '0';
@@ -222,10 +223,10 @@ begin
 			when RomData_s =>
 				v.RetryCnt 			:= 0;
 				v.RetryAfterStop 	:= '0';
-				if FromRom.Vld = '1' then
-					v.FromRom := FromRom;
+				if FromRomVld = '1' then
+					v.RomEntry := FromRomEntry;
 					-- Skip if it is not an auto-read and not a user operation
-					if (FromRom.AutoRead = '0') and (r.IsFifoOperation = '0') then
+					if (FromRomEntry.AutoRead = '0') and (r.IsFifoOperation = '0') then
 						v.Fsm := UpdCheck_s;
 					-- Execute access otherwise
 					else
@@ -296,19 +297,19 @@ begin
 			---------------------------------------------------------------------				
 			when MuxAddr_s =>
 				-- Skip if mux is unused
-				if r.FromRom.HasMux = '0' then
+				if r.RomEntry.HasMux = '0' then
 					v.Fsm := CmdAddr_s;
 				-- Apply mux address otherwise
 				else
 					v.I2cCmdType	:= CMD_SEND;
-					v.I2cCmdData	:= r.FromRom.MuxAddr & '0';	-- Mux is always written R/W=0
+					v.I2cCmdData	:= r.RomEntry.MuxAddr(6 downto 0) & '0';	-- Mux is always written R/W=0
 					v.FsmNext		:= MuxValue_s;
 					v.Fsm 			:= ApplyCmd_s;
 				end if;
 				
 			when MuxValue_s =>
 				v.I2cCmdType	:= CMD_SEND;
-				v.I2cCmdData	:= r.FromRom.MuxValue;
+				v.I2cCmdData	:= r.RomEntry.MuxValue;
 				v.FsmNext		:= MuxRepStart_s;
 				v.Fsm 			:= ApplyCmd_s;	
 
@@ -322,20 +323,20 @@ begin
 			---------------------------------------------------------------------				
 			when CmdAddr_s =>				
 				-- Skip if no command bytes
-				if r.FromRom.CmdBytes = 0 then
+				if r.RomEntry.CmdBytes = 0 then
 					v.Fsm	:= DataAddr_s;
 				-- Apply Address otherwise
 				else
-					v.ByteCnt := r.FromRom.CmdBytes-1;
+					v.ByteCnt := r.RomEntry.CmdBytes-1;
 					v.I2cCmdType	:= CMD_SEND;					
-					v.I2cCmdData	:= r.FromRom.DevAddr & '0';	-- Command is always written R/W=0
+					v.I2cCmdData	:= r.RomEntry.DevAddr(6 downto 0) & '0';	-- Command is always written R/W=0
 					v.FsmNext		:= CmdValue_s;
 					v.Fsm 			:= ApplyCmd_s;
 				end if;
 			
 			when CmdValue_s =>
 				v.I2cCmdType		:= CMD_SEND;
-				v.I2cCmdData		:= r.FromRom.CmdData(r.ByteCnt*8+7 downto r.ByteCnt*8);
+				v.I2cCmdData		:= r.RomEntry.CmdData(r.ByteCnt*8+7 downto r.ByteCnt*8);
 				v.Fsm 				:= ApplyCmd_s;				
 				if r.ByteCnt = 0 then
 					v.FsmNext	:= CmdRepStart_s;
@@ -355,13 +356,13 @@ begin
 			when DataAddr_s =>
 				v.RecData	:= (others => '0');
 				-- Skip if no data bytes
-				if r.FromRom.DatBytes = 0 then
+				if r.RomEntry.DatBytes = 0 then
 					v.Fsm	:= Stop_s;
 				-- Apply Address otherwise
 				else
-					v.ByteCnt := r.FromRom.DatBytes-1;
+					v.ByteCnt := r.RomEntry.DatBytes-1;
 					v.I2cCmdType	:= CMD_SEND;	
-					v.I2cCmdData	:= r.FromRom.DevAddr & not r.IsWriteAccess;	
+					v.I2cCmdData	:= r.RomEntry.DevAddr(6 downto 0) & not r.IsWriteAccess;	
 					v.FsmNext		:= DataValue_s;
 					v.Fsm 			:= ApplyCmd_s;
 				end if;				
@@ -403,7 +404,7 @@ begin
 					v.RamData	:= r.RecData;
 				end if;
 				v.RamWr		:= '1';
-				v.RamAddr	:= r.ToRom.Addr(RomAddrBits_c-1 downto 0);
+				v.RamAddr	:= r.ToRomAddr;
 				-- Remove data from FIFO after operation if it was a FIFO operation 
 				-- ... this is only possible after the operation since data may be used for retrys 
 				if r.IsFifoOperation = '1' then
@@ -421,7 +422,8 @@ begin
 	--------------------------------------------------------------------------
 	-- Outputs
 	--------------------------------------------------------------------------
-	ToRom <= r.ToRom;
+	ToRomVld <= r.ToRomVld;
+	ToRomAddr <= r.ToRomAddr;
 	UpdateDone <= r.UpdateDone;
 	RegFifoEmpty <= FifoEmptyI;
 	AccessFailed <= r.AccessFailed;
@@ -437,7 +439,7 @@ begin
 				r.UpdateCnt 		<= 0;
 				r.UpdatePending		<= '0';
 				r.Fsm				<= Idle_s;
-				r.ToRom.Vld			<= '0';
+				r.ToRomVld			<= '0';
 				r.I2cCmdVld			<= '0';
 				r.RamWr				<= '0';
 				r.UpdateDone		<= '0';
@@ -495,7 +497,7 @@ begin
 		)
 		port map (
 			ClkA		=> Clk,
-			AddrA		=> r.ToRom.Addr(RomAddrBits_c-1 downto 0),
+			AddrA		=> r.ToRomAddr,
 			WrA			=> r.RamWr,
 			DinA		=> r.RamData,
 			DoutA		=> open,

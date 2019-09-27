@@ -12,7 +12,7 @@ namespace import psi::sim::*
 psi::sim::add_library devreg
 
 #suppress messages
-psi::sim::compile_suppress 135,1236,1370
+psi::sim::compile_suppress 135,1236,1370,1074
 psi::sim::run_suppress 8684,3479,3813,8009,3812
 
 # libraries
@@ -42,6 +42,7 @@ psi::sim::add_sources "../hdl" {
 	i2c_devreg_pkg.vhd \
 	i2c_devreg.vhd \
 	i2c_devreg_vivado_wrp.vhd \
+	../example_rom/hdl/i2c_devreg_rom.vhd \
 } -tag src
 
 #testbenches

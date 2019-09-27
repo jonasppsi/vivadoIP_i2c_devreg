@@ -56,12 +56,12 @@ entity i2c_devreg_vivado_wrp is
 		-- Config ROM Ports
 		-----------------------------------------------------------------------------
 		-- Data To ROM
-		ToRom_TValid	: out	std_logic;
-		ToRom_TData		: out	std_logic_vector(31 downto 0);
+		I2cRom_TValid	: out	std_logic;
+		I2cRom_TData	: out	std_logic_vector(31 downto 0);
 		
 		-- Data From ROM
-		FromRom_TValid	: in	std_logic;
-		FromRom_TData	: in	std_logic_vector(63 downto 0);
+		RomI2c_TValid	: in	std_logic;
+		RomI2c_TData	: in	std_logic_vector(63 downto 0);
 		
 		-----------------------------------------------------------------------------
 		-- Parallel Ports
@@ -141,9 +141,10 @@ architecture rtl of i2c_devreg_vivado_wrp is
 	-- Ohter Signals 
 	signal AxiRst				: std_logic;
 	
+	-- Constants
+	constant RomAddrBits_c		: integer	:= log2ceil(NumOfReg_g);
+	
 	-- Implementation signals
-	signal FromRom				: FromRom_t;
-	signal ToRom				: ToRom_t;
 	signal UpdateTrigI			: std_logic;
 	signal UpdateEnaI			: std_logic;
 	signal BusBusyI				: std_logic;
@@ -153,10 +154,10 @@ architecture rtl of i2c_devreg_vivado_wrp is
 	signal IsReadUpdateI		: std_logic;
 	signal RegFifoFullI			: std_logic;
 	signal RegFifoEmptyI		: std_logic;
+	signal FromRomEntry			: CfgRomEntry_t;
 	
 	
-	-- Constants
-	constant RomAddrBits_c		: integer	:= log2ceil(NumOfReg_g);
+
 	
 	
 
@@ -244,10 +245,8 @@ begin
 	-----------------------------------------------------------------------------
 	-- Wrapper Logic
 	-----------------------------------------------------------------------------
-	AxiRst <= not s00_axi_aresetn;
-	ToRom_TValid 	<= ToRom.Vld;
-	ToRom_TData 	<= ToRom.Addr;
-	FromRom 		<= SlvToFromRom(FromRom_TData, FromRom_TValid);
+	AxiRst 				<= not s00_axi_aresetn;
+	FromRomEntry 		<= SlvToRomEntry(RomI2c_TData);
 	
 	UpdateEnaI		<= reg_wdata(0)(0);
 	UpdateTrigI		<= UpdateTrigI or (reg_wdata(1)(0) and reg_wr(1));
@@ -277,7 +276,8 @@ begin
    
 	-----------------------------------------------------------------------------
 	-- Implementation
-	----------------------------------------------------------------------------- 
+	-----------------------------------------------------------------------------
+	I2cRom_TData(I2cRom_TData'high downto RomAddrBits_c) <= (others => '0');
  	i_regdev : entity work.i2c_devreg
 		generic map (
 			ClockFrequency_g	=> ClockFrequency_g,
@@ -293,8 +293,10 @@ begin
 			Rst				=> AxiRst,
 			
 			-- ROM Connection
-			ToRom			=> ToRom,
-			FromRom			=> FromRom,
+			ToRomVld		=> I2cRom_TValid,
+			ToRomAddr		=> I2cRom_TData(RomAddrBits_c-1 downto 0),
+			FromRomVld		=> RomI2c_TValid,
+			FromRomEntry	=> FromRomEntry,
 			
 			-- Parallel Signals
 			UpdateTrig		=> UpdateTrigI,

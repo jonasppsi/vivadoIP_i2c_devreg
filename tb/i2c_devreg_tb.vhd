@@ -62,9 +62,12 @@ architecture sim of i2c_devreg_tb is
 	-- *** DUT Signals ***
 	signal Clk : std_logic := '1';
 	signal Rst : std_logic := '1';
-	signal ToRom : ToRom_t;
-	signal FromRom1 : FromRom_t;
-	signal FromRom : FromRom_t;
+	signal ToRomVld : std_logic := '0';
+	signal ToRomAddr : std_logic_vector(log2ceil(NumOfReg_g)-1 downto 0) := (others => '0');
+	signal FromRomEntry1 : CfgRomEntry_t;
+	signal FromRomEntry : CfgRomEntry_t;
+	signal FromRomVld : std_logic := '0';
+	signal FromRomVld1 : std_logic := '0';
 	signal UpdateTrig : std_logic := '0';
 	signal UpdateEna : std_logic := '0';
 	signal UpdateDone : std_logic := '0';
@@ -112,7 +115,7 @@ architecture sim of i2c_devreg_tb is
 	
 	function AddrSlv(	addr : integer) return std_logic_vector is
 	begin
-		return std_logic_vector(to_unsigned(addr, 7));
+		return std_logic_vector(to_unsigned(addr, 8));
 	end function;
 	
 	-- *** USER CONSTANTS ***
@@ -226,8 +229,10 @@ begin
 		port map (
 			Clk => Clk,
 			Rst => Rst,
-			ToRom => ToRom,
-			FromRom => FromRom,
+			ToRomVld => ToRomVld,
+			ToRomAddr => ToRomAddr,
+			FromRomVld => FromRomVld,
+			FromRomEntry => FromRomEntry,
 			UpdateTrig => UpdateTrig,
 			UpdateEna => UpdateEna,
 			UpdateDone => UpdateDone,
@@ -937,11 +942,12 @@ begin
 	p_rom : process(Clk)
 	begin
 		if rising_edge(Clk) then
-			FromRom1.Vld <= '0';
-			if ToRom.Vld = '1' then				
-				FromRom1 <= EntryToFromRom(CfgRom(to_integer(unsigned(ToRom.Addr))), '1');
+			FromRomVld1 <= ToRomVld;
+			FromRomVld <= FromRomVld1;
+			if ToRomVld = '1' then				
+				FromRomEntry1 <= CfgRom(to_integer(unsigned(ToRomAddr)));
 			end if;
-			FromRom <= FromRom1;
+			FromRomEntry <= FromRomEntry1;
 		end if;
 	end process;
 	

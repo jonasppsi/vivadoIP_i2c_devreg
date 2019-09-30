@@ -64,6 +64,11 @@ gui_add_page "Configuration"
 gui_create_parameter "NumOfReg_g" "Number of I2C registers to support (must match ROM)"
 gui_add_parameter
 
+###############################################################
+# Interface Clocks
+###############################################################
+set_interface_clock "I2cRom" "aclk"
+set_interface_clock "RomI2c" "aclk"
 
 ###############################################################
 # Optional Ports

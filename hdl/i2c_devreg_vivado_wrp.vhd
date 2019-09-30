@@ -24,12 +24,12 @@ entity i2c_devreg_vivado_wrp is
 	generic
 	(	
 		-- SPI Parameters
-		ClockFrequency_g	: real		:= 125.0e6;		-- in Hz		
-		I2cFrequency_g		: real 		:= 100.0e3;		-- in Hz		
-		BusBusyTimeout_g	: real		:= 1.0e-3;		-- in sec		
-		UpdatePeriod_g		: real		:= 100.0e-3;	-- in sec		
-		InternalTriState_g	: boolean	:= true;		-- 				
-		NumOfReg_g			: integer	:= 1024;		--				
+		ClockFrequencyHz_g	: integer		:= 125_000_000;		-- in Hz		
+		I2cFrequencyHz_g	: integer 		:= 100_000;			-- in Hz		
+		BusBusyTimeoutUs_g	: integer		:= 1000;			-- in us		
+		UpdatePeriodMs_g	: integer		:= 100;				-- in ms		
+		InternalTriState_g	: boolean		:= true;		-- 				
+		NumOfReg_g			: integer		:= 1024;		--				
 		
 		-- AXI Parameters
 		C_S00_AXI_ID_WIDTH          : integer := 1;		-- Width of ID for for write address, write data, read address and read data
@@ -123,6 +123,12 @@ end entity i2c_devreg_vivado_wrp;
 ------------------------------------------------------------------------------
 
 architecture rtl of i2c_devreg_vivado_wrp is 
+
+	-- Generics as real
+	constant ClockFrequency_g	: real	:= real(ClockFrequencyHz_g);			-- in Hz		
+	constant I2cFrequency_g		: real	:= real(I2cFrequencyHz_g);				-- in Hz		
+	constant BusBusyTimeout_g	: real	:= real(BusBusyTimeoutUs_g)*1.0e-6;		-- in sec		
+	constant UpdatePeriod_g		: real	:= real(UpdatePeriodMs_g)*1.0e-3;		-- in sec	
 
 	-- Array of desired number of chip enables for each address range
 	constant USER_SLV_NUM_REG   : integer              := RegIdx_Mem_c; 

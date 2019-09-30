@@ -348,8 +348,8 @@
       <xilinx:definitionSource>package_project</xilinx:definitionSource>
       <xilinx:vendorDisplayName>Paul Scherrer Institut</xilinx:vendorDisplayName>
       <xilinx:vendorURL>http://www.psi.ch</xilinx:vendorURL>
-      <xilinx:coreRevision>1569846713</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2019-09-30T12:32:25Z</xilinx:coreCreationDateTime>
+      <xilinx:coreRevision>1569847538</xilinx:coreRevision>
+      <xilinx:coreCreationDateTime>2019-09-30T12:46:10Z</xilinx:coreCreationDateTime>
       <xilinx:tags>
         <xilinx:tag xilinx:name="psi.ch:user:i2c_devreg_expl_rom:1.0_ARCHIVE_LOCATION">d:/gfa/Libraries/Firmware/VivadoIp/vivadoIp_i2c_devreg/example_rom</xilinx:tag>
         <xilinx:tag xilinx:name="psi.ch:PSI:i2c_devreg_expl_rom:1.0_ARCHIVE_LOCATION">d:/gfa/Libraries/Firmware/VivadoIp/vivadoIp_i2c_devreg/example_rom</xilinx:tag>

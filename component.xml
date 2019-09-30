@@ -383,7 +383,7 @@
       <spirit:parameters>
         <spirit:parameter>
           <spirit:name>ASSOCIATED_BUSIF</spirit:name>
-          <spirit:value spirit:id="BUSIFPARAM_VALUE.S00_AXI_ACLK.ASSOCIATED_BUSIF">s00_axi</spirit:value>
+          <spirit:value spirit:id="BUSIFPARAM_VALUE.S00_AXI_ACLK.ASSOCIATED_BUSIF">s00_axi:I2cRom:RomI2c</spirit:value>
         </spirit:parameter>
         <spirit:parameter>
           <spirit:name>ASSOCIATED_RESET</spirit:name>
@@ -418,7 +418,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>e5103e28</spirit:value>
+            <spirit:value>39015cc2</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -434,7 +434,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>e5103e28</spirit:value>
+            <spirit:value>39015cc2</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -448,7 +448,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>22c6ef88</spirit:value>
+            <spirit:value>ffdcb16b</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -1372,25 +1372,25 @@
       </spirit:port>
     </spirit:ports>
     <spirit:modelParameters>
-      <spirit:modelParameter xsi:type="spirit:nameValueTypeType" spirit:dataType="signed">
-        <spirit:name>ClockFrequency_g</spirit:name>
-        <spirit:displayName>Clockfrequency G</spirit:displayName>
-        <spirit:value spirit:format="float" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.ClockFrequency_g">125000000</spirit:value>
+      <spirit:modelParameter xsi:type="spirit:nameValueTypeType" spirit:dataType="integer">
+        <spirit:name>ClockFrequencyHz_g</spirit:name>
+        <spirit:displayName>Clockfrequencyhz G</spirit:displayName>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.ClockFrequencyHz_g">125000000</spirit:value>
       </spirit:modelParameter>
-      <spirit:modelParameter spirit:dataType="signed">
-        <spirit:name>I2cFrequency_g</spirit:name>
-        <spirit:displayName>I2cfrequency G</spirit:displayName>
-        <spirit:value spirit:format="float" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.I2cFrequency_g">100000</spirit:value>
+      <spirit:modelParameter spirit:dataType="integer">
+        <spirit:name>I2cFrequencyHz_g</spirit:name>
+        <spirit:displayName>I2cfrequencyhz G</spirit:displayName>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.I2cFrequencyHz_g">100000</spirit:value>
       </spirit:modelParameter>
-      <spirit:modelParameter spirit:dataType="signed">
-        <spirit:name>BusBusyTimeout_g</spirit:name>
-        <spirit:displayName>Busbusytimeout G</spirit:displayName>
-        <spirit:value spirit:format="float" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.BusBusyTimeout_g">0.001</spirit:value>
+      <spirit:modelParameter spirit:dataType="integer">
+        <spirit:name>BusBusyTimeoutUs_g</spirit:name>
+        <spirit:displayName>Busbusytimeoutus G</spirit:displayName>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.BusBusyTimeoutUs_g">1000</spirit:value>
       </spirit:modelParameter>
-      <spirit:modelParameter spirit:dataType="signed">
-        <spirit:name>UpdatePeriod_g</spirit:name>
-        <spirit:displayName>Updateperiod G</spirit:displayName>
-        <spirit:value spirit:format="float" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.UpdatePeriod_g">0.10000000000000001</spirit:value>
+      <spirit:modelParameter spirit:dataType="integer">
+        <spirit:name>UpdatePeriodMs_g</spirit:name>
+        <spirit:displayName>Updateperiodms G</spirit:displayName>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.UpdatePeriodMs_g">100</spirit:value>
       </spirit:modelParameter>
       <spirit:modelParameter spirit:dataType="boolean">
         <spirit:name>InternalTriState_g</spirit:name>
@@ -1487,7 +1487,7 @@
       <spirit:file>
         <spirit:name>hdl/i2c_devreg_vivado_wrp.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_777c4fa0</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_e2d3f476</spirit:userFileType>
         <spirit:logicalName>i2c_devreg_1_0</spirit:logicalName>
       </spirit:file>
     </spirit:fileSet>
@@ -1564,7 +1564,7 @@
       <spirit:file>
         <spirit:name>xgui/i2c_devreg_v1_0.tcl</spirit:name>
         <spirit:fileType>tclSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_22c6ef88</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_ffdcb16b</spirit:userFileType>
         <spirit:userFileType>XGUI_VERSION_2</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
@@ -1586,24 +1586,24 @@
   <spirit:description>I2C device register mirroring</spirit:description>
   <spirit:parameters>
     <spirit:parameter>
-      <spirit:name>ClockFrequency_g</spirit:name>
+      <spirit:name>ClockFrequencyHz_g</spirit:name>
       <spirit:displayName>Clock Frequency [Hz]</spirit:displayName>
-      <spirit:value spirit:format="float" spirit:resolve="user" spirit:id="PARAM_VALUE.ClockFrequency_g">125000000</spirit:value>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.ClockFrequencyHz_g">125000000</spirit:value>
     </spirit:parameter>
     <spirit:parameter>
-      <spirit:name>I2cFrequency_g</spirit:name>
+      <spirit:name>I2cFrequencyHz_g</spirit:name>
       <spirit:displayName>I2C Clock Frequency [Hz]</spirit:displayName>
-      <spirit:value spirit:format="float" spirit:resolve="user" spirit:id="PARAM_VALUE.I2cFrequency_g">100000</spirit:value>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.I2cFrequencyHz_g">100000</spirit:value>
     </spirit:parameter>
     <spirit:parameter>
-      <spirit:name>BusBusyTimeout_g</spirit:name>
-      <spirit:displayName>Bus Busy Timeout [sec]</spirit:displayName>
-      <spirit:value spirit:format="float" spirit:resolve="user" spirit:id="PARAM_VALUE.BusBusyTimeout_g">0.001</spirit:value>
+      <spirit:name>BusBusyTimeoutUs_g</spirit:name>
+      <spirit:displayName>Bus Busy Timeout [us]</spirit:displayName>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.BusBusyTimeoutUs_g">1000</spirit:value>
     </spirit:parameter>
     <spirit:parameter>
-      <spirit:name>UpdatePeriod_g</spirit:name>
-      <spirit:displayName>Automatic Update Period [sec]</spirit:displayName>
-      <spirit:value spirit:format="float" spirit:resolve="user" spirit:id="PARAM_VALUE.UpdatePeriod_g">0.10000000000000001</spirit:value>
+      <spirit:name>UpdatePeriodMs_g</spirit:name>
+      <spirit:displayName>Automatic Update Period [ms]</spirit:displayName>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.UpdatePeriodMs_g">100</spirit:value>
     </spirit:parameter>
     <spirit:parameter>
       <spirit:name>InternalTriState_g</spirit:name>
@@ -1661,8 +1661,8 @@
       <xilinx:definitionSource>package_project</xilinx:definitionSource>
       <xilinx:vendorDisplayName>Paul Scherrer Institut</xilinx:vendorDisplayName>
       <xilinx:vendorURL>http://www.psi.ch</xilinx:vendorURL>
-      <xilinx:coreRevision>1569845757</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2019-09-30T12:16:37Z</xilinx:coreCreationDateTime>
+      <xilinx:coreRevision>1569848242</xilinx:coreRevision>
+      <xilinx:coreCreationDateTime>2019-09-30T12:58:02Z</xilinx:coreCreationDateTime>
       <xilinx:tags>
         <xilinx:tag xilinx:name="psi.ch:user:i2c_devreg:1.0_ARCHIVE_LOCATION">d:/gfa/Libraries/Firmware/VivadoIp/vivadoIp_i2c_devreg</xilinx:tag>
         <xilinx:tag xilinx:name="psi.ch:PSI:i2c_devreg:1.0_ARCHIVE_LOCATION">d:/gfa/Libraries/Firmware/VivadoIp/vivadoIp_i2c_devreg</xilinx:tag>
@@ -1670,12 +1670,12 @@
     </xilinx:coreExtensions>
     <xilinx:packagingInfo>
       <xilinx:xilinxVersion>2018.2</xilinx:xilinxVersion>
-      <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="9a9b8c83"/>
+      <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="f8ae102c"/>
       <xilinx:checksum xilinx:scope="memoryMaps" xilinx:value="b8e2c1b7"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="218a727c"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="2d881db7"/>
       <xilinx:checksum xilinx:scope="ports" xilinx:value="e02785fa"/>
-      <xilinx:checksum xilinx:scope="hdlParameters" xilinx:value="e88b78af"/>
-      <xilinx:checksum xilinx:scope="parameters" xilinx:value="3e3a57f2"/>
+      <xilinx:checksum xilinx:scope="hdlParameters" xilinx:value="d9fcbd78"/>
+      <xilinx:checksum xilinx:scope="parameters" xilinx:value="4b94731b"/>
     </xilinx:packagingInfo>
   </spirit:vendorExtensions>
 </spirit:component>

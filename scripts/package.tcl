@@ -58,16 +58,16 @@ add_lib_relative \
 #User Parameters
 gui_add_page "Configuration"
 
-gui_create_parameter "ClockFrequency_g" {Clock Frequency [Hz]}
+gui_create_parameter "ClockFrequencyHz_g" {Clock Frequency [Hz]}
 gui_add_parameter
 
-gui_create_parameter "I2cFrequency_g" {I2C Clock Frequency [Hz]}
+gui_create_parameter "I2cFrequencyHz_g" {I2C Clock Frequency [Hz]}
 gui_add_parameter
 
-gui_create_parameter "BusBusyTimeout_g" {Bus Busy Timeout [sec]}
+gui_create_parameter "BusBusyTimeoutUs_g" {Bus Busy Timeout [us]}
 gui_add_parameter
 
-gui_create_parameter "UpdatePeriod_g" {Automatic Update Period [sec]}
+gui_create_parameter "UpdatePeriodMs_g" {Automatic Update Period [ms]}
 gui_add_parameter
 
 gui_create_parameter "InternalTriState_g" "Use IP-Core internal tri-state buffers"
@@ -80,6 +80,11 @@ gui_add_parameter
 gui_create_parameter "C_S00_AXI_ADDR_WIDTH" "Axi address width in bits"
 gui_add_parameter
 
+###############################################################
+# Interface Clocks
+###############################################################
+set_interface_clock "I2cRom" "s00_axi_aclk"
+set_interface_clock "RomI2c" "s00_axi_aclk"
 
 ###############################################################
 # Optional Ports

@@ -42,9 +42,19 @@ architecture rtl of i2c_devreg_rom is
 
 	constant RomContent : CfgRom_t(0 to 2**log2ceil(NumOfReg_g)-1) := (
 		-- << ROM_CONTENT >>
-		0       => (AutoRead => '1', HasMux => '0',	MuxAddr => X"00", 	MuxValue => X"00", 	DevAddr => X"12",	CmdBytes => 1,	CmdData => X"000000AB",	DatBytes => 1),
-		1       => (AutoRead => '0', HasMux => '0',	MuxAddr => X"00", 	MuxValue => X"00", 	DevAddr => X"12",	CmdBytes => 1,	CmdData => X"000000A0",	DatBytes => 1),
-		2       => (AutoRead => '1', HasMux => '1',	MuxAddr => X"0A", 	MuxValue => X"CD", 	DevAddr => X"13",	CmdBytes => 1,	CmdData => X"000000E0",	DatBytes => 2),
+
+		-----------------------------------------------------------------------------
+		-- LM73
+		-----------------------------------------------------------------------------
+		0	=> (AutoRead => '1', HasMux => '0', MuxAddr => X"00", MuxValue => X"00", DevAddr => X"48", CmdBytes => 1, CmdData => X"00000000", DatBytes => 2), -- Temperature
+		1	=> (AutoRead => '0', HasMux => '0', MuxAddr => X"00", MuxValue => X"00", DevAddr => X"48", CmdBytes => 1, CmdData => X"00000001", DatBytes => 1), -- Config
+
+		-----------------------------------------------------------------------------
+		-- LM73 behind Mux
+		-----------------------------------------------------------------------------
+		16	=> (AutoRead => '1', HasMux => '1', MuxAddr => X"A0", MuxValue => X"20", DevAddr => X"48", CmdBytes => 1, CmdData => X"00000000", DatBytes => 2), -- Temperature
+		17	=> (AutoRead => '0', HasMux => '1', MuxAddr => X"A0", MuxValue => X"20", DevAddr => X"48", CmdBytes => 1, CmdData => X"00000001", DatBytes => 1), -- Config
+
 		-- << END_ROM_CONTENT >>
 		others 	=> (AutoRead => '0', HasMux => '0',	MuxAddr => X"00", 	MuxValue => X"00", 	DevAddr => X"00",	CmdBytes => 0,	CmdData => X"00000000",	DatBytes => 0)
 	); 	

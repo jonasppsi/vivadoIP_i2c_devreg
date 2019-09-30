@@ -35,6 +35,7 @@ psi::sim::add_sources "$LibPath/VHDL/psi_tb/hdl" {
 	psi_tb_compare_pkg.vhd \
 	psi_tb_activity_pkg.vhd \
 	psi_tb_i2c_pkg.vhd \
+	psi_tb_axi_pkg.vhd \
 } -tag lib
 
 # project sources
@@ -49,6 +50,7 @@ psi::sim::add_sources "../hdl" {
 psi::sim::add_sources "../tb" {
 	i2c_devreg_tb.vhd \
 	i2c_multi_devreg_tb.vhd \
+	top_tb.vhd \
 } -tag tb
 	
 #TB Runs
@@ -59,4 +61,7 @@ tb_run_add_arguments \
 psi::sim::add_tb_run
 
 psi::sim::create_tb_run "i2c_multi_devreg_tb"
+psi::sim::add_tb_run
+
+psi::sim::create_tb_run "top_tb"
 psi::sim::add_tb_run

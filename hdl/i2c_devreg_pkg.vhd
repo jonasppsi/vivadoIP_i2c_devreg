@@ -51,6 +51,21 @@ package i2c_devreg_pkg is
 	
 	-- Convert std_logic_vector to record
 	function SlvToRomEntry(	Inp : in std_logic_vector) return CfgRomEntry_t;
+	
+	-- *** Registers ***
+	constant RegIdx_UpdateEna_c			: integer	:= 0;
+	constant RegIdx_UpdateTrig_c		: integer	:= 1;
+	constant RegIdx_BusBusy_c			: integer	:= 4;
+	constant RegIdx_AccessFailed_c		: integer	:= 5;
+	constant RegIdx_FifoState_c			: integer	:= 6;
+	constant RegIdx_UpdateOngoing_c		: integer	:= 7;
+	constant RegIdx_ForceRead_c			: integer	:= 8;
+	constant RegIdx_Mem_c				: integer	:= 16;
+	
+	constant BitIdx_FifoState_Empty_c	: integer	:= 0;
+	constant BitIdx_FifoState_Full_c	: integer	:= 8;
+	
+	
 
 end package;
 

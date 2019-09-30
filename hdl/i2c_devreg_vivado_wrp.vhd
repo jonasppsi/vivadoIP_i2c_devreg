@@ -125,7 +125,7 @@ end entity i2c_devreg_vivado_wrp;
 architecture rtl of i2c_devreg_vivado_wrp is 
 
 	-- Array of desired number of chip enables for each address range
-	constant USER_SLV_NUM_REG   : integer              := 32; 
+	constant USER_SLV_NUM_REG   : integer              := RegIdx_Mem_c; 
 	
 	-- IP Interconnect 
 	signal reg_rd               : std_logic_vector(USER_SLV_NUM_REG-1 downto  0);
@@ -150,17 +150,12 @@ architecture rtl of i2c_devreg_vivado_wrp is
 	signal BusBusyI				: std_logic;
 	signal AccessFailedI		: std_logic;
 	signal AccessFailedLatch	: std_logic;
-	signal IsWriteI				: std_logic;
-	signal IsReadUpdateI		: std_logic;
 	signal RegFifoFullI			: std_logic;
 	signal RegFifoEmptyI		: std_logic;
 	signal FromRomEntry			: CfgRomEntry_t;
-	
-	
-
-	
-	
-
+	signal RegAddrI				: std_logic_vector(RomAddrBits_c-1 downto 0);
+	signal MemWrI				: std_logic;
+	signal UpdateOngoingI		: std_logic;
 begin
 
 	AxiRst <= not s00_axi_aresetn;
@@ -248,13 +243,16 @@ begin
 	AxiRst 				<= not s00_axi_aresetn;
 	FromRomEntry 		<= SlvToRomEntry(RomI2c_TData);
 	
-	UpdateEnaI		<= reg_wdata(0)(0);
-	UpdateTrigI		<= UpdateTrigI or (reg_wdata(1)(0) and reg_wr(1));
+	UpdateEnaI							<= reg_wdata(RegIdx_UpdateEna_c)(0);
+	reg_rdata(RegIdx_UpdateEna_c)(0)	<= UpdateEnaI;
 	
-	reg_rdata(4)(0)	<= BusBusyI;
-	reg_rdata(5)(0)	<= AccessFailedLatch;
-	reg_rdata(6)(0)	<= RegFifoEmptyI;
-	reg_rdata(7)(8)	<= RegFifoFullI;
+	UpdateTrigI		<= UpdateTrig or (reg_wdata(RegIdx_UpdateTrig_c)(0) and reg_wr(RegIdx_UpdateTrig_c));
+	
+	reg_rdata(RegIdx_BusBusy_c)(0)							<= BusBusyI;
+	reg_rdata(RegIdx_AccessFailed_c)(0)						<= AccessFailedLatch;
+	reg_rdata(RegIdx_FifoState_c)(BitIdx_FifoState_Empty_c)	<= RegFifoEmptyI;
+	reg_rdata(RegIdx_FifoState_c)(BitIdx_FifoState_Full_c)	<= RegFifoFullI;
+	reg_rdata(RegIdx_UpdateOngoing_c)(0)					<= UpdateOngoingI;
 	
 	p_fail_latch : process(s00_axi_aclk)
 	begin
@@ -264,15 +262,16 @@ begin
 			else	
 				if AccessFailedI = '1' then
 					AccessFailedLatch <= '1';
-				elsif (reg_wdata(5)(0) = '1') and (reg_wr(5) = '1') then
+				elsif (reg_wdata(RegIdx_AccessFailed_c)(0) = '1') and (reg_wr(RegIdx_AccessFailed_c) = '1') then
 					AccessFailedLatch <= '0';
 				end if;
 			end if;
 		end if;
 	end process;
 	
-	IsWriteI		<= '1' when mem_addr(RomAddrBits_c+1 downto RomAddrBits_c) = "01" else '0';
-	IsReadUpdateI	<= '1' when mem_addr(RomAddrBits_c+1 downto RomAddrBits_c) = "10" else '0';
+	RegAddrI <= mem_addr(RomAddrBits_c+1 downto 2) when reg_wr(RegIdx_ForceRead_c) = '0' else reg_wdata(RegIdx_ForceRead_c)(RomAddrBits_c-1 downto 0);
+	
+	MemWrI <= '1' when mem_wr /= "0000" else '0';
    
 	-----------------------------------------------------------------------------
 	-- Implementation
@@ -302,13 +301,14 @@ begin
 			UpdateTrig		=> UpdateTrigI,
 			UpdateEna		=> UpdateEnaI,
 			UpdateDone		=> open,
+			UpdateOngoing 	=> UpdateOngoingI,
 			BusBusy			=> BusBusyI,
 			AccessFailed	=> AccessFailedI,
 
 			-- Reg Access
-			RegAddr			=> mem_addr(RomAddrBits_c-1 downto 0),
-			RegI2cWrite		=> IsWriteI,
-			RegI2cRead		=> IsReadUpdateI,
+			RegAddr			=> RegAddrI,
+			RegI2cWrite		=> MemWrI,
+			RegI2cRead		=> reg_wr(8),
 			RegDout			=> mem_rdata,
 			RegDin			=> mem_wdata,
 			RegFifoFull		=> RegFifoFullI,

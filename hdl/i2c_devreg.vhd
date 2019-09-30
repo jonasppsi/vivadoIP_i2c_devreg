@@ -53,6 +53,7 @@ entity i2c_devreg is
 		UpdateTrig		: in	std_logic;
 		UpdateEna		: in	std_logic	:= '1';	
 		UpdateDone		: out	std_logic;			-- Pulse when update cycle completed
+		UpdateOngoing	: out	std_logic;
 		BusBusy			: out 	std_logic;	
 		AccessFailed	: out	std_logic;			-- Pulse if an access failed
 
@@ -427,6 +428,7 @@ begin
 	UpdateDone <= r.UpdateDone;
 	RegFifoEmpty <= FifoEmptyI;
 	AccessFailed <= r.AccessFailed;
+	UpdateOngoing <= r.UpdatePending;
 	
 	--------------------------------------------------------------------------
 	-- Sequential Proccess

@@ -15,7 +15,6 @@ library ieee;
 library work;
 	use work.i2c_devreg_pkg.all;
 	use work.psi_common_math_pkg.all;
-	use work.psi_common_i2c_master_pkg.all;
 	
 ------------------------------------------------------------------------------
 -- Entity Declaration
@@ -26,8 +25,7 @@ entity i2c_devreg_rom is
 	);
 	port (
 		-- Control Signals
-		Clk				: in	std_logic;	
-		Rst				: in	std_logic;	    
+		aclk				: in	std_logic;	    
 		
 		-- Config Rom Interface
 		I2cRom_TValid	: in	std_logic;
@@ -57,9 +55,9 @@ architecture rtl of i2c_devreg_rom is
 
 begin
 
-	p_rom : process(Clk)
+	p_rom : process(aclk)
 	begin
-		if rising_edge(Clk) then
+		if rising_edge(aclk) then
 			RomI2c_TValid <= I2cRom_TValid;
 			if I2cRom_TValid = '1' then
 				RomI2c_TData	<= RomEntryRomToSlv(RomContent(to_integer(unsigned(I2cRom_TData(RomAddrBits_c-1 downto 0)))));

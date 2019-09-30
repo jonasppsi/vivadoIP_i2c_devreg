@@ -1,5 +1,5 @@
 #Packaging artifacts
-scripts/package_prj
+**/package_prj
 xgui/*_wrp_*.tcl
 
 #Pycharm Files

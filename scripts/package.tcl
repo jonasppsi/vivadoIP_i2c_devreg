@@ -49,7 +49,16 @@ add_lib_relative \
 		psi_common_i2c_master.vhd \
 		psi_common_pl_stage.vhd \
 		psi_common_axi_slave_ipif.vhd \
-	}			
+	}
+	
+###############################################################
+# Driver Files
+###############################################################	
+
+add_drivers_relative ../drivers/i2c_devreg { \
+	src/i2c_devreg.c \
+	src/i2c_devreg.h \
+}
 
 ###############################################################
 # GUI Parameters

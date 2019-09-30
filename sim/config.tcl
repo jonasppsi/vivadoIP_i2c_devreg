@@ -48,6 +48,7 @@ psi::sim::add_sources "../hdl" {
 #testbenches
 psi::sim::add_sources "../tb" {
 	i2c_devreg_tb.vhd \
+	i2c_multi_devreg_tb.vhd \
 } -tag tb
 	
 #TB Runs
@@ -55,4 +56,7 @@ psi::sim::create_tb_run "i2c_devreg_tb"
 tb_run_add_arguments \
 	"-gInternalTriState_g=true" \
 	"-gInternalTriState_g=false"
+psi::sim::add_tb_run
+
+psi::sim::create_tb_run "i2c_multi_devreg_tb"
 psi::sim::add_tb_run

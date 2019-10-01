@@ -85,8 +85,8 @@ begin
 	i_dut : entity work.i2c_devreg_vivado_wrp
 		generic map (
 			-- SPI Parameters
-			ClockFrequency_g		=> 	ClockFrequencyAxi_c,
-			I2cFrequency_g			=> 1.0e6,		
+			ClockFrequencyHz_g		=> integer(ClockFrequencyAxi_c),
+			I2cFrequencyHz_g		=> integer(1.0e6),		
 			InternalTriState_g		=> true,			
 			NumOfReg_g				=> NumReg_c,			
 			-- AXI Parameters

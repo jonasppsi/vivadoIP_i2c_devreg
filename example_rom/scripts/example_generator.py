@@ -1,3 +1,7 @@
+# ----------------------------------------------------------
+#  Copyright (c) 2019 by Paul Scherrer Institute, Switzerland
+#  All rights reserved.
+# ----------------------------------------------------------
 from IicPkg import Device, Register, Component
 
 def Generate():

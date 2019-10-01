@@ -1,3 +1,7 @@
+# ----------------------------------------------------------
+#  Copyright (c) 2019 by Paul Scherrer Institute, Switzerland
+#  All rights reserved.
+# ----------------------------------------------------------
 import re
 from typing import Iterable, Tuple
 

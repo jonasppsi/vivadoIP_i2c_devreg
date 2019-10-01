@@ -19,26 +19,54 @@
 
 I2cDevReg_ErrCode I2cDevReg_UpdateEnable(const uint32_t baseAddr, const bool ena)
 {
-	Xil_Out32(baseAddr + I2C_DEVREG_REG_UPDATE_ENA, (ena ? 1 : 0));
+	Xil_Out32(baseAddr + I2C_DEVREG_REG_UPD_ENA, (ena ? 1 : 0));
 	return I2cDevReg_Success;
 }
 
 I2cDevReg_ErrCode I2cDevReg_DoUpdate(const uint32_t baseAddr)
 {
-	Xil_Out32(baseAddr + I2C_DEVREG_REG_UPDATE_TRIG, 1);
+	Xil_Out32(baseAddr + I2C_DEVREG_REG_UPD_TRIG, 1);
+	return I2cDevReg_Success;
+}
+
+I2cDevReg_ErrCode I2cDevReg_IrqEnable(const uint32_t baseAddr, const uint32_t irqs)
+{
+	uint32_t regVal = XilIn32(baseAddr + I2C_DEVREG_IRQ_ENA);
+	XilOut32(baseAddr + I2C_DEVREG_IRQ_ENA, regVal | irqs);
+	return I2cDevReg_Success;
+}
+
+
+I2cDevReg_ErrCode I2cDevReg_IrqDisable(const uint32_t baseAddr, const uint32_t irqs)
+{
+	uint32_t regVal = XilIn32(baseAddr + I2C_DEVREG_IRQ_ENA);
+	XilOut32(baseAddr + I2C_DEVREG_IRQ_ENA, regVal & ~irqs);
+	return I2cDevReg_Success;
+}
+
+
+I2cDevReg_ErrCode I2cDevReg_IrqClear(const uint32_t baseAddr, const uint32_t irqs)
+{
+	XilOut32(baseAddr + I2C_DEVREG_IRQ_VEC, irqs);
+	return I2cDevReg_Success;
+}
+
+I2cDevReg_ErrCode I2cDevReg_IrqGetVec(const uint32_t baseAddr, uint32_t* const irqVec_p)
+{
+	*irqVec_p = XilIn32(baseAddr + I2C_DEVREG_IRQ_VEC);
 	return I2cDevReg_Success;
 }
 
 I2cDevReg_ErrCode I2cDevReg_CheckFail(const uint32_t baseAddr, bool* const flag_p)
 {
-	uint32_t rdVal = Xil_In32(baseAddr + I2C_DEVREG_REG_ACCESS_FAILED);
+	uint32_t rdVal = Xil_In32(baseAddr + I2C_DEVREG_REG_ACC_FAIL);
 	*flag_p = (rdVal != 0);
 	return I2cDevReg_Success;
 }
 
 I2cDevReg_ErrCode I2cDevReg_ResetFail(const uint32_t baseAddr)
 {
-	Xil_Out32(baseAddr + I2C_DEVREG_REG_ACCESS_FAILED, 1);
+	Xil_Out32(baseAddr + I2C_DEVREG_REG_ACC_FAIL, 1);
 	return I2cDevReg_Success;
 }
 

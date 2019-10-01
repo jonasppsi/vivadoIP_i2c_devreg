@@ -67,6 +67,7 @@ entity i2c_devreg_vivado_wrp is
 		-- Parallel Ports
 		-----------------------------------------------------------------------------
 		UpdateTrig		: in	std_logic	:= '0';
+		Irq				: out	std_logic;
 		
 		-----------------------------------------------------------------------------
 		-- Axi Slave Bus Interface
@@ -153,6 +154,7 @@ architecture rtl of i2c_devreg_vivado_wrp is
 	-- Implementation signals
 	signal UpdateTrigI			: std_logic;
 	signal UpdateEnaI			: std_logic;
+	signal UpdateDoneI			: std_logic;
 	signal BusBusyI				: std_logic;
 	signal AccessFailedI		: std_logic;
 	signal AccessFailedLatch	: std_logic;
@@ -162,6 +164,10 @@ architecture rtl of i2c_devreg_vivado_wrp is
 	signal RegAddrI				: std_logic_vector(RomAddrBits_c-1 downto 0);
 	signal MemWrI				: std_logic;
 	signal UpdateOngoingI		: std_logic;
+	signal IrqI					: std_logic;
+	signal IrqVecI				: std_logic_vector(31 downto 0);
+	signal IrqEnaI				: std_logic_vector(31 downto 0);
+	signal FifoEmptyLast		: std_logic;
 begin
 
 	AxiRst <= not s00_axi_aresetn;
@@ -249,16 +255,20 @@ begin
 	AxiRst 				<= not s00_axi_aresetn;
 	FromRomEntry 		<= SlvToRomEntry(RomI2c_TData);
 	
-	UpdateEnaI							<= reg_wdata(RegIdx_UpdateEna_c)(0);
-	reg_rdata(RegIdx_UpdateEna_c)(0)	<= UpdateEnaI;
+	UpdateEnaI							<= reg_wdata(RegIdx_UpdateEna_c)(0);	
+	UpdateTrigI							<= UpdateTrig or (reg_wdata(RegIdx_UpdateTrig_c)(0) and reg_wr(RegIdx_UpdateTrig_c));
+	IrqEnaI(BitIdx_Irq_UpdateDone_c)	<= reg_wdata(RegIdx_IrqEna_c)(BitIdx_Irq_UpdateDone_c);
+	IrqEnaI(BitIdx_Irq_FifoEmpty_c)		<= reg_wdata(RegIdx_IrqEna_c)(BitIdx_Irq_FifoEmpty_c);
 	
-	UpdateTrigI		<= UpdateTrig or (reg_wdata(RegIdx_UpdateTrig_c)(0) and reg_wr(RegIdx_UpdateTrig_c));
-	
+	reg_rdata(RegIdx_UpdateEna_c)(0)						<= UpdateEnaI;
 	reg_rdata(RegIdx_BusBusy_c)(0)							<= BusBusyI;
 	reg_rdata(RegIdx_AccessFailed_c)(0)						<= AccessFailedLatch;
 	reg_rdata(RegIdx_FifoState_c)(BitIdx_FifoState_Empty_c)	<= RegFifoEmptyI;
 	reg_rdata(RegIdx_FifoState_c)(BitIdx_FifoState_Full_c)	<= RegFifoFullI;
 	reg_rdata(RegIdx_UpdateOngoing_c)(0)					<= UpdateOngoingI;
+	reg_rdata(RegIdx_IrqEna_c)(BitIdx_Irq_UpdateDone_c)		<= IrqEnaI(BitIdx_Irq_UpdateDone_c);
+	reg_rdata(RegIdx_IrqEna_c)(BitIdx_Irq_FifoEmpty_c)		<= IrqEnaI(BitIdx_Irq_FifoEmpty_c);
+	reg_rdata(RegIdx_IrqVec_c)								<= IrqVecI;
 	
 	p_fail_latch : process(s00_axi_aclk)
 	begin
@@ -275,10 +285,42 @@ begin
 		end if;
 	end process;
 	
+	p_irq : process(s00_axi_aclk)
+	begin
+		if rising_edge(s00_axi_aclk) then
+			if AxiRst = '1' then
+				IrqVecI <= (others => '0');
+				IrqI <= '0';
+				FifoEmptyLast <= '0';
+			else
+				if UpdateDoneI = '1' then
+					IrqVecI(BitIdx_Irq_UpdateDone_c) <= '1';
+				elsif reg_wdata(RegIdx_IrqVec_c)(BitIdx_Irq_UpdateDone_c) = '1' and reg_wr(RegIdx_IrqVec_c) = '1' then
+					IrqVecI(BitIdx_Irq_UpdateDone_c) <= '0';
+				end if;
+				
+				FifoEmptyLast <= RegFifoEmptyI;
+				if (RegFifoEmptyI = '1') and (FifoEmptyLast = '0') then
+					IrqVecI(BitIdx_Irq_FifoEmpty_c) <= '1';
+				elsif reg_wdata(RegIdx_IrqVec_c)(BitIdx_Irq_FifoEmpty_c) = '1' and reg_wr(RegIdx_IrqVec_c) = '1' then 
+					IrqVecI(BitIdx_Irq_FifoEmpty_c) <= '0';
+				end if;
+				
+				if unsigned(IrqVecI and IrqEnaI) /= 0 then
+					IrqI <= '1';
+				else
+					IrqI <= '0';
+				end if;
+			end if;
+		end if;
+	end process;
+	
 	RegAddrI <= mem_addr(RomAddrBits_c+1 downto 2) when reg_wr(RegIdx_ForceRead_c) = '0' else reg_wdata(RegIdx_ForceRead_c)(RomAddrBits_c-1 downto 0);
 	
 	MemWrI <= '1' when mem_wr /= "0000" else '0';
-   
+	
+	Irq <= IrqI;
+	
 	-----------------------------------------------------------------------------
 	-- Implementation
 	-----------------------------------------------------------------------------
@@ -306,7 +348,7 @@ begin
 			-- Parallel Signals
 			UpdateTrig		=> UpdateTrigI,
 			UpdateEna		=> UpdateEnaI,
-			UpdateDone		=> open,
+			UpdateDone		=> UpdateDoneI,
 			UpdateOngoing 	=> UpdateOngoingI,
 			BusBusy			=> BusBusyI,
 			AccessFailed	=> AccessFailedI,

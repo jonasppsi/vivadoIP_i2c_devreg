@@ -55,6 +55,8 @@ package i2c_devreg_pkg is
 	-- *** Registers ***
 	constant RegIdx_UpdateEna_c			: integer	:= 0;
 	constant RegIdx_UpdateTrig_c		: integer	:= 1;
+	constant RegIdx_IrqEna_c			: integer	:= 2;
+	constant RegIdx_IrqVec_c			: integer	:= 3;
 	constant RegIdx_BusBusy_c			: integer	:= 4;
 	constant RegIdx_AccessFailed_c		: integer	:= 5;
 	constant RegIdx_FifoState_c			: integer	:= 6;
@@ -64,6 +66,9 @@ package i2c_devreg_pkg is
 	
 	constant BitIdx_FifoState_Empty_c	: integer	:= 0;
 	constant BitIdx_FifoState_Full_c	: integer	:= 8;
+	
+	constant BitIdx_Irq_UpdateDone_c	: integer	:= 0;
+	constant BitIdx_Irq_FifoEmpty_c		: integer	:= 8;
 	
 	
 

@@ -23,18 +23,24 @@ typedef enum I2cDevReg_ErrCode
 } I2cDevReg_ErrCode;
 
 // Register
-#define I2C_DEVREG_REG_UPDATE_ENA			0x00
-#define I2C_DEVREG_REG_UPDATE_TRIG			0x04
+#define I2C_DEVREG_REG_UPD_ENA				0x00
+#define I2C_DEVREG_REG_UPD_TRIG				0x04
+#define I2C_DEVREG_IRQ_ENA					0x08
+#define I2C_DEVREG_IRQ_VEC					0x0C
 #define I2C_DEVREG_REG_BUS_BUSY				0x10
-#define I2C_DEVREG_REG_ACCESS_FAILED		0x14
+#define I2C_DEVREG_REG_ACC_FAIL				0x14
 #define I2C_DEVREG_REG_FIFO_STATE			0x18
-#define I2C_DEVREG_REG_UPDATE_ONGOING		0x1C
+#define I2C_DEVREG_REG_UPD_ONGOING			0x1C
 #define I2C_DEVREG_REG_FORCE_READ			0x20
 #define I2C_DEVREG_MEM_OFFS					0x40
 
 // FIFO state Bitmasks
 #define I2C_DEVREG_FIFO_STATE_EMPTY 		(1 << 0)
 #define I2C_DEVREG_FIFO_STATE_FULL 			(1 << 8)
+
+// IRQ Bitmasks
+#define I2C_DEVREG_IRQ_UPD					(1 << 0)
+#define I2C_DEVREG_IRQ_FIFO_EMPTY			(1 << 8)
 
 
 //*******************************************************************************
@@ -56,6 +62,38 @@ I2cDevReg_ErrCode I2cDevReg_UpdateEnable(const uint32_t baseAddr, const bool ena
  * @param baseAddr		Base address of the IP component to access
  */
 I2cDevReg_ErrCode I2cDevReg_DoUpdate(const uint32_t baseAddr);
+
+/**
+ * Enable IRQs.
+ *
+ * @param baseAddr		Base address of the IP component to access
+ * @param irqs			Or combination of all IRQs that shall be enabled.
+ */
+I2cDevReg_ErrCode I2cDevReg_IrqEnable(const uint32_t baseAddr, const uint32_t irqs);
+
+/**
+ * Disable IRQs.
+ *
+ * @param baseAddr		Base address of the IP component to access
+ * @param irqs			Or combination of all IRQs that shall be disabled.
+ */
+I2cDevReg_ErrCode I2cDevReg_IrqDisable(const uint32_t baseAddr, const uint32_t irqs);
+
+/**
+ * Clear IRQs in IRQ_VEC.
+ *
+ * @param baseAddr		Base address of the IP component to access
+ * @param irqs			Or combination of all IRQs that shall be cleared.
+ */
+I2cDevReg_ErrCode I2cDevReg_IrqClear(const uint32_t baseAddr, const uint32_t irqs);
+
+/**
+ * Get IRQ_VEC.
+ *
+ * @param baseAddr		Base address of the IP component to access
+ * @param irqVec_p		Result: Content of IRQ_VEC register
+ */
+I2cDevReg_ErrCode I2cDevReg_IrqGetVec(const uint32_t baseAddr, uint32_t* const irqVec_p);
 
 /**
  * Check if the fail flag was set. Note that the flag must be reset manually using

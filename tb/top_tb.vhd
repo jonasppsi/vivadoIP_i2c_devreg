@@ -76,6 +76,7 @@ architecture sim of top_tb is
 	signal RomI2c_TValid	: std_logic						:= '0';
 	signal RomI2c_TData		: std_logic_vector(63 downto 0)	:= (others => '0');
 	signal UpdateTrig		: std_logic						:= '0';
+	signal Irq				: std_logic						:= '0';
 	
 begin
 
@@ -105,6 +106,7 @@ begin
 			RomI2c_TData		=> RomI2c_TData,
 			-- Parallel Ports
 			UpdateTrig			=> UpdateTrig,
+			Irq					=> Irq,
 			-- Axi Slave Bus Interface
 			s00_axi_aclk    	=> aclk,
 			s00_axi_aresetn  	=> aresetn,
@@ -191,6 +193,7 @@ begin
 	p_control : process
 		variable Readback_v	: integer;
 		variable ReadbackSlv_v : std_logic_vector(31 downto 0);
+		variable StartTime_v : time;
 	begin
 		-- Reset
 		aresetn <= '0';
@@ -218,11 +221,11 @@ begin
 		
 		-- *** Check Single Read (index 1) ***
 		print(">> Check Single Read");
+		StartTime_v := now;
 		axi_single_write(RegIdx_ForceRead_c*4, 1, axi_ms, axi_sm, aclk);
 		ClockedWaitTime(1 us, aclk);
 		axi_single_expect(RegIdx_BusBusy_c*4, 1, axi_ms, axi_sm, aclk, "Bus did not go busy"); 
-		axi_single_expect(RegIdx_FifoState_c*4, 0, axi_ms, axi_sm, aclk, "FIFO is still empty"); 
-		
+		axi_single_expect(RegIdx_FifoState_c*4, 0, axi_ms, axi_sm, aclk, "FIFO is still empty");		
 		-- Wait until done
 		loop
 			axi_single_read(RegIdx_BusBusy_c*4, Readback_v, axi_ms, axi_sm, aclk);
@@ -231,11 +234,13 @@ begin
 		-- Check values
 		axi_single_expect((RegIdx_Mem_c+1)*4, 16#F1#, axi_ms, axi_sm, aclk, "Wrong data");
 		axi_single_expect(RegIdx_AccessFailed_c*4, 0, axi_ms, axi_sm, aclk, "Wrong data");	
+		CheckLastActivity(Irq, now-StartTime_v, 0, "Irq sent unexpectedly");
 		ClockedWaitTime(10 us, aclk);
 		
 		-- *** Check single write (index 1)  ***
 		print(">> Check single write");
 		axi_single_write((RegIdx_Mem_c+1)*4, 16#F2#, axi_ms, axi_sm, aclk);
+		axi_single_write(RegIdx_IrqEna_c*4, 2**BitIdx_Irq_FifoEmpty_c, axi_ms, axi_sm, aclk);
 		ClockedWaitTime(1 us, aclk);
 		axi_single_expect(RegIdx_BusBusy_c*4, 1, axi_ms, axi_sm, aclk, "Bus did not go busy"); 
 		axi_single_expect(RegIdx_FifoState_c*4, 0, axi_ms, axi_sm, aclk, "FIFO is still empty"); 		
@@ -248,6 +253,11 @@ begin
 		axi_single_expect((RegIdx_Mem_c+1)*4, 16#F2#, axi_ms, axi_sm, aclk, "Wrong data");
 		axi_single_expect(RegIdx_AccessFailed_c*4, 0, axi_ms, axi_sm, aclk, "Wrong data");	
 		axi_single_expect(RegIdx_FifoState_c*4, 2**BitIdx_FifoState_Empty_c, axi_ms, axi_sm, aclk, "FIFO is not empty");
+		StdlCompare(1, Irq, "IRQ was not fired");
+		axi_single_write(RegIdx_IrqVec_c*4, 2**BitIdx_Irq_FifoEmpty_c, axi_ms, axi_sm, aclk);
+		ClockedWaitTime(100 ns, aclk);
+		StdlCompare(0, Irq, "IRQ was not cleared");
+		axi_single_write(RegIdx_IrqEna_c*4, 0, axi_ms, axi_sm, aclk);
 		ClockedWaitTime(10 us, aclk);
 		
 		-- *** Check Fail & Clear ***
@@ -272,6 +282,7 @@ begin
 		-- *** Check Update External Port ***
 		print(">> Check Update External Port");
 		axi_single_write(RegIdx_UpdateEna_c*4, 1, axi_ms, axi_sm, aclk);
+		axi_single_write(RegIdx_IrqEna_c*4, 2**BitIdx_Irq_UpdateDone_c, axi_ms, axi_sm, aclk);
 		PulseSig(UpdateTrig, aclk);
 		ClockedWaitTime(1 us, aclk);
 		axi_single_expect(RegIdx_UpdateOngoing_c*4, 1, axi_ms, axi_sm, aclk, "Bus did not go busy"); 
@@ -284,10 +295,16 @@ begin
 		axi_single_expect((RegIdx_Mem_c+0)*4, 16#F4#, axi_ms, axi_sm, aclk, "Wrong data 0");
 		axi_single_expect((RegIdx_Mem_c+2)*4, 16#F5F6#, axi_ms, axi_sm, aclk, "Wrong data 2");
 		axi_single_expect(RegIdx_AccessFailed_c*4, 0, axi_ms, axi_sm, aclk, "Wrong fail-bit");	
+		StdlCompare(1, Irq, "IRQ was not fired");
+		axi_single_write(RegIdx_IrqVec_c*4, 2**BitIdx_Irq_UpdateDone_c, axi_ms, axi_sm, aclk);
+		ClockedWaitTime(100 ns, aclk);
+		StdlCompare(0, Irq, "IRQ was not cleared");
+		axi_single_write(RegIdx_IrqEna_c*4, 0, axi_ms, axi_sm, aclk);
 		ClockedWaitTime(10 us, aclk);
 		
 		-- *** Check Update via Register Bank ***
 		print(">> Check Update via Register Bank");
+		StartTime_v := now;
 		axi_single_write(RegIdx_UpdateTrig_c*4, 1, axi_ms, axi_sm, aclk);
 		ClockedWaitTime(1 us, aclk);
 		axi_single_expect(RegIdx_UpdateOngoing_c*4, 1, axi_ms, axi_sm, aclk, "Bus did not go busy"); 
@@ -301,7 +318,8 @@ begin
 		axi_single_expect((RegIdx_Mem_c+2)*4, 16#F8F9#, axi_ms, axi_sm, aclk, "Wrong data 2");
 		axi_single_expect(RegIdx_AccessFailed_c*4, 0, axi_ms, axi_sm, aclk, "Wrong fail-bit");	
 		ClockedWaitTime(10 us, aclk);
-		
+		-- We would not expect an IRQ
+		CheckLastActivity(Irq, now-StartTime_v, 0, "Irq sent unexpectedly");
 		
 		-- TB done
 		TbRunning <= false;

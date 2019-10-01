@@ -340,7 +340,13 @@ begin
 				v.I2cCmdData		:= r.RomEntry.CmdData(r.ByteCnt*8+7 downto r.ByteCnt*8);
 				v.Fsm 				:= ApplyCmd_s;				
 				if r.ByteCnt = 0 then
-					v.FsmNext	:= CmdRepStart_s;
+					-- Repeated start for reads
+					if r.IsWriteAccess = '0' then
+						v.FsmNext	:= CmdRepStart_s;
+					-- But not for writes
+					else
+						v.FsmNext	:= DataValue_s;
+					end if;
 				else
 					v.ByteCnt	:= r.ByteCnt - 1;
 					v.FsmNext	:= CmdValue_s;
@@ -369,25 +375,32 @@ begin
 				end if;				
 				
 			when DataValue_s =>
-				-- Write 
-				if r.IsWriteAccess = '1' then
-					v.I2cCmdType		:= CMD_SEND;
-					v.I2cCmdData		:= r.WriteData(r.ByteCnt*8+7 downto r.ByteCnt*8);
-				-- Read
+				-- Skip if no data bytes
+				if r.RomEntry.DatBytes = 0 then
+					v.Fsm	:= Stop_s;
+				-- Do access otherwise
 				else
-					v.I2cCmdType		:= CMD_REC;
-				end if;
 				
-				-- Otherwise it is a read (either periodic or from FIFO)			
-				v.Fsm 				:= ApplyCmd_s;				
-				if r.ByteCnt = 0 then
-					v.FsmNext	:= DataEnd_s;
-					v.I2cCmdAck	:= '0'; -- for writes, ACK has no effect. So we can always set it
-				else
-					v.ByteCnt	:= r.ByteCnt - 1;
-					v.FsmNext	:= DataValue_s;
-					v.I2cCmdAck	:= '1';
-				end if;		
+					-- Write 
+					if r.IsWriteAccess = '1' then
+						v.I2cCmdType		:= CMD_SEND;
+						v.I2cCmdData		:= r.WriteData(r.ByteCnt*8+7 downto r.ByteCnt*8);
+					-- Read
+					else
+						v.I2cCmdType		:= CMD_REC;
+					end if;
+					
+					-- Otherwise it is a read (either periodic or from FIFO)			
+					v.Fsm 				:= ApplyCmd_s;				
+					if r.ByteCnt = 0 then
+						v.FsmNext	:= DataEnd_s;
+						v.I2cCmdAck	:= '0'; -- for writes, ACK has no effect. So we can always set it
+					else
+						v.ByteCnt	:= r.ByteCnt - 1;
+						v.FsmNext	:= DataValue_s;
+						v.I2cCmdAck	:= '1';
+					end if;	
+				end if;
 
 			---------------------------------------------------------------------
 			-- End of Transfer handling

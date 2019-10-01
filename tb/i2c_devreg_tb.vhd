@@ -885,8 +885,6 @@ begin
 		I2cSlaveWaitStart(I2cScl, I2cSda, "B2 CMD-START");
 		I2cSlaveExpectByte(I2cGetAddr(SLAVE_ADDR, I2c_WRITE), I2cScl, I2cSda, "B2 CMD-ADDR", I2c_ACK);
 		I2cSlaveExpectByte(CMD_OFFS, I2cScl, I2cSda, "B2 CMD-DATA", I2c_ACK);
-		I2cSlaveWaitRepeatedStart(I2cScl, I2cSda, "B2 CMD-REPSTART");
-		I2cSlaveExpectByte(I2cGetAddr(SLAVE_ADDR, I2c_WRITE), I2cScl, I2cSda, "B2 DAT-ADDR", I2c_ACK);
 		I2cSlaveExpectByte(DATA_OFFS+2, I2cScl, I2cSda, "B2 DATA-BYTE0", I2c_ACK);
 		I2cSlaveWaitStop(I2cScl, I2cSda, "B2 STOP");		
 		-- ... continue update

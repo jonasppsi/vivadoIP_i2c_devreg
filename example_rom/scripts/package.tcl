@@ -61,7 +61,7 @@ add_lib_copied \
 #User Parameters
 gui_add_page "Configuration"
 
-gui_create_parameter "NumOfReg_g" "Number of I2C registers to support (must match ROM)"
+gui_create_parameter "NumOfReg_g" "Number of I2C registers to support (must match i2c_devreg)"
 gui_add_parameter
 
 ###############################################################

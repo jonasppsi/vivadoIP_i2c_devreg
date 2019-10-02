@@ -388,7 +388,8 @@ begin
 			I2cSlaveWaitStart(I2cScl, I2cSda, "D8-" & to_string(i));
 			I2cSlaveExpectByte(I2cGetAddr(16#0A#, I2c_WRITE), I2cScl, I2cSda, "D9-" & to_string(i), I2c_ACK);
 			I2cSlaveExpectByte(16#CD#, I2cScl, I2cSda, "D10-" & to_string(i), I2c_ACK);	
-			I2cSlaveWaitRepeatedStart(I2cScl, I2cSda, "D11-" & to_string(i));
+			I2cSlaveWaitStop(I2cScl, I2cSda, "D11a-" & to_string(i));
+			I2cSlaveWaitStart(I2cScl, I2cSda, "D1b-" & to_string(i));
 			I2cSlaveExpectByte(I2cGetAddr(16#13#, I2c_WRITE), I2cScl, I2cSda, "D12-" & to_string(i), I2c_ACK);
 			I2cSlaveExpectByte(16#E0#, I2cScl, I2cSda, "D13-" & to_string(i), I2c_ACK);
 			I2cSlaveWaitRepeatedStart(I2cScl, I2cSda, "D14-" & to_string(i));

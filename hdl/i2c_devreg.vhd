@@ -88,8 +88,8 @@ architecture rtl of i2c_devreg is
 	-- *** Types ***
 	type Fsm_t is (	Idle_s, UpdCheck_s, RomData_s, 
 					ApplyCmd_s, WaitResp_s, 
-					Start_s, Stop_s, MuxAddr_s, 
-					MuxValue_s, MuxRepStart_s, 
+					Start_s, Stop_s, 
+					MuxAddr_s, MuxValue_s, MuxStop_s, MuxStart_s, 
 					CmdAddr_s, CmdValue_s, CmdRepStart_s, 
 					DataAddr_s, DataValue_s, DataEnd_s);
 
@@ -141,14 +141,16 @@ architecture rtl of i2c_devreg is
 	signal FifoAddr			: std_logic_vector(RomAddrBits_c-1 downto 0);
 	signal FifoIsRead		: std_logic;
 	signal FifoData			: std_logic_vector(31 downto 0);
+	signal I2cBusBusy		: std_logic;
+	signal RamRdData		: std_logic_vector(31 downto 0);
 begin
 
 	--------------------------------------------------------------------------
 	-- Combinatorial Proccess
 	--------------------------------------------------------------------------
 	p_comb : process(	r, FromRomVld, FromRomEntry, UpdateTrig, UpdateEna, 
-						I2cCmdRdy, I2cRspVld, I2cRspType, I2cRspData, I2cRspAck, I2cRspArbLost, I2cRspSeq, 
-						FifoEmptyI, FifoAddr, FifoIsRead, FifoData)
+						I2cCmdRdy, I2cRspVld, I2cRspType, I2cRspData, I2cRspAck, I2cRspArbLost, I2cRspSeq, I2cBusBusy,
+						FifoEmptyI, FifoAddr, FifoIsRead, FifoData, RamRdData)
 		variable v : two_process_r;
 	begin
 		-- *** hold variables stable ***
@@ -158,8 +160,7 @@ begin
 		-- Trigger update periodically or upon user request. 
 		-- UpdatePending is reset in the FSM when the update is started.
 		if UpdateEna = '0' then
-			v.UpdateCnt 		:= 0;
-			v.UpdatePending		:= '0';					
+			v.UpdateCnt 		:= 0;				
 		else
 			if (UpdateTrig = '1') or (r.UpdateCnt = UpdateToLimit_c) then
 				v.UpdatePending	:= '1';	
@@ -236,6 +237,7 @@ begin
 							v.Fsm := UpdCheck_s;
 						-- Otherwise execute and check if it is read or write
 						else
+							v.WriteData := RamRdData;
 							v.IsWriteAccess := FromRomEntry.AutoWrite;
 							v.Fsm := Start_s;
 						end if;
@@ -268,7 +270,7 @@ begin
 						else
 							v.RetryAfterStop 	:= '1';
 							v.RetryCnt 			:= r.RetryCnt + 1;
-							v.Fsm	:= Stop_s; 
+							v.Fsm				:= Stop_s; 
 						end if;								
 					-- Otherwise, continue
 					else
@@ -318,13 +320,30 @@ begin
 			when MuxValue_s =>
 				v.I2cCmdType	:= CMD_SEND;
 				v.I2cCmdData	:= r.RomEntry.MuxValue;
-				v.FsmNext		:= MuxRepStart_s;
+				v.FsmNext		:= MuxStop_s;
 				v.Fsm 			:= ApplyCmd_s;	
-
-			when MuxRepStart_s =>
-				v.I2cCmdType	:= CMD_REPSTART;	
-				v.FsmNext		:= CmdAddr_s;
+				
+			-- After setting up the mux, we must stop/start (and not repeated start) because muxes only change
+			-- their switches when the bus is idle (after a stop)
+			when MuxStop_s =>
+				v.I2cCmdType	:= CMD_STOP;	
+				v.FsmNext		:= MuxStart_s;
 				v.Fsm			:= ApplyCmd_s;
+			
+			when MuxStart_s =>
+				v.I2cCmdType	:= CMD_START;	
+				v.FsmNext		:= CmdAddr_s;
+				
+				-- Do not use standard AppplyCmd_s since we have to check that not other master took over the bus
+				v.I2cCmdVld		:= '1';
+				-- OK, we got the bus
+				if (I2cCmdRdy = '1') and (r.I2cCmdVld = '1') then
+					v.Fsm 		:= WaitResp_s;
+					v.I2cCmdVld		:= '0';
+				-- Another master took over the bus, in this case we retry the whole access
+				elsif I2cBusBusy = '1' then
+					v.Fsm	:= Start_s;
+				end if;
 				
 			---------------------------------------------------------------------
 			-- Command Handling
@@ -449,6 +468,7 @@ begin
 	RegFifoEmpty <= FifoEmptyI;
 	AccessFailed <= r.AccessFailed;
 	UpdateOngoing <= r.UpdatePending;
+	BusBusy <= I2cBusBusy;
 	
 	--------------------------------------------------------------------------
 	-- Sequential Proccess
@@ -498,7 +518,7 @@ begin
 			RspAck		=> I2cRspAck,		
 			RspArbLost	=> I2cRspArbLost,	
 			RspSeq		=> I2cRspSeq,		
-			BusBusy		=> BusBusy,
+			BusBusy		=> I2cBusBusy,
 			TimeoutCmd	=> open,
 			I2cScl		=> I2cScl,	
 			I2cSda		=> I2cSda,	
@@ -522,7 +542,7 @@ begin
 			AddrA		=> r.ToRomAddr,
 			WrA			=> r.RamWr,
 			DinA		=> r.RamData,
-			DoutA		=> open,
+			DoutA		=> RamRdData,
 			ClkB		=> Clk,
 			AddrB		=> RegAddr,
 			WrB			=> '0',

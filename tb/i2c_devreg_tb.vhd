@@ -179,7 +179,8 @@ architecture sim of i2c_devreg_tb is
 		I2cSlaveWaitStart(I2cScl, I2cSda, Msg & " START");
 		I2cSlaveExpectByte(I2cGetAddr(MUX_ADDR, I2c_WRITE), I2cScl, I2cSda, Msg & " MUX-ADDR", I2c_ACK);
 		I2cSlaveExpectByte(MUX_VAL, I2cScl, I2cSda, Msg & " MUX-DATA", I2c_ACK);
-		I2cSlaveWaitRepeatedStart(I2cScl, I2cSda, Msg & " MUX-REPSTART");
+		I2cSlaveWaitStop(I2cScl, I2cSda, Msg & " MUX-STOP");
+		I2cSlaveWaitStart(I2cScl, I2cSda, Msg & " MUX-START");
 		I2cSlaveExpectByte(I2cGetAddr(SLAVE_ADDR, I2c_READ), I2cScl, I2cSda, Msg & " DATA-ADDR", I2c_ACK);
 		I2cSlaveSendByte(DATA_OFFS+DataOffs, I2cScl, I2cSda, Msg & " DATA-BYTE0", I2c_NACK);
 		I2cSlaveWaitStop(I2cScl, I2cSda, Msg & " STOP");
@@ -207,7 +208,8 @@ architecture sim of i2c_devreg_tb is
 		I2cSlaveWaitStart(I2cScl, I2cSda, Msg & " START");
 		I2cSlaveExpectByte(I2cGetAddr(MUX_ADDR, I2c_WRITE), I2cScl, I2cSda, Msg & " MUX-ADDR", I2c_ACK);
 		I2cSlaveExpectByte(MUX_VAL, I2cScl, I2cSda, Msg & " MUX-DATA", I2c_ACK);
-		I2cSlaveWaitRepeatedStart(I2cScl, I2cSda, Msg & " MUX-REPSTART");
+		I2cSlaveWaitStop(I2cScl, I2cSda, Msg & " MUX-STOP");
+		I2cSlaveWaitStart(I2cScl, I2cSda, Msg & " MUX-START");
 		I2cSlaveExpectByte(I2cGetAddr(SLAVE_ADDR, I2c_WRITE), I2cScl, I2cSda, Msg & " CMD-ADDR", I2c_ACK);
 		I2cSlaveExpectByte(CMD_OFFS+0, I2cScl, I2cSda, Msg & " CMD-DATA", I2c_ACK);
 		I2cSlaveExpectByte(CMD_OFFS+1, I2cScl, I2cSda, Msg & " CMD-DATA", I2c_ACK);
@@ -362,8 +364,8 @@ begin
 		CfgRom(1) := ROM_NOMUX_NOCMD_1DATA;
 		PulseSig(UpdateTrig, Clk);
 		wait for 1 us;
-		ClockedWaitFor('0', BusBusy, Clk);
-		TestMemContent(1, DATA_OFFS, Clk, RegAddr, RegDout);
+		ClockedWaitFor('1', UpdateDone, Clk);
+		TestMemContent(1, DATA_OFFS, Clk, RegAddr, RegDout, "A");
 		
 		-- 1 Byte, no Mux, with command bytes
 		for i in 1 to 4 loop
@@ -372,8 +374,8 @@ begin
 							CmdBytes => i, CmdData => CMD_BYTES(i), DatBytes => 1, AutoRead => '1', AutoWrite => '0');
 			PulseSig(UpdateTrig, Clk);
 			wait for 1 us;
-			ClockedWaitFor('0', BusBusy, Clk);
-			TestMemContent(1, DATA_OFFS+i, Clk, RegAddr, RegDout);
+			ClockedWaitFor('1', UpdateDone, Clk);
+			TestMemContent(1, DATA_OFFS+i, Clk, RegAddr, RegDout, "B " & to_string(i));
 		end loop;
 		
 		-- 1 Byte Mux, Mux, no cmd
@@ -381,24 +383,32 @@ begin
 		CfgRom(1) := ROM_1MUX_NOCMD_1DATA;
 		PulseSig(UpdateTrig, Clk);
 		wait for 1 us;
-		ClockedWaitFor('0', BusBusy, Clk);
-		TestMemContent(1, DATA_OFFS, Clk, RegAddr, RegDout);
+		ClockedWaitFor('1', UpdateDone, Clk);
+		TestMemContent(1, DATA_OFFS, Clk, RegAddr, RegDout, "C");
 		
 		-- 1 Byte Mux, Mux, 2 byte cmd
 		wait for 5 us;
 		CfgRom(1) := ROM_1MUX_2CMD_1DATA;
 		PulseSig(UpdateTrig, Clk);
 		wait for 1 us;
-		ClockedWaitFor('0', BusBusy, Clk);
-		TestMemContent(1, DATA_OFFS+1, Clk, RegAddr, RegDout);
+		ClockedWaitFor('1', UpdateDone, Clk);
+		TestMemContent(1, DATA_OFFS+1, Clk, RegAddr, RegDout, "D");
 		
 		-- 4 Byte, no Mux, no command bytes
 		wait for 5 us;
 		CfgRom(1) := ROM_NOMUX_NOCMD_4DATA;
 		PulseSig(UpdateTrig, Clk);
 		wait for 1 us;
-		ClockedWaitFor('0', BusBusy, Clk);
-		TestMemContent(1, DATA32, Clk, RegAddr, RegDout);
+		ClockedWaitFor('1', UpdateDone, Clk);
+		TestMemContent(1, DATA32, Clk, RegAddr, RegDout, "E");
+		
+		-- Other master took over bus after Mux related stop/start
+		wait for 5 us;
+		CfgRom(1) := ROM_1MUX_NOCMD_1DATA;
+		PulseSig(UpdateTrig, Clk);
+		wait for 1 us;
+		ClockedWaitFor('1', UpdateDone, Clk);
+		TestMemContent(1, DATA_OFFS, Clk, RegAddr, RegDout, "C");
 			
 		WaitForCase(I2cCase, 1);		
 		wait for 10 us;		
@@ -765,13 +775,25 @@ begin
 		Slave_1MUX_2CMD_1DATA(I2cScl, I2cSda, "D", DataOffs => 1);
 		
 		-- 4 Byte, no Mux, no command bytes
-		I2cSlaveWaitStart(I2cScl, I2cSda, "C Start");
-		I2cSlaveExpectByte(I2cGetAddr(SLAVE_ADDR, I2c_READ), I2cScl, I2cSda, "C DataAddr", I2c_ACK);
+		I2cSlaveWaitStart(I2cScl, I2cSda, "E Start");
+		I2cSlaveExpectByte(I2cGetAddr(SLAVE_ADDR, I2c_READ), I2cScl, I2cSda, "E DataAddr", I2c_ACK);
 		for i in 0 to 2 loop
-			I2cSlaveSendByte(DATA_OFFS+i, I2cScl, I2cSda, "C DataData " & to_string(i), I2c_ACK);
+			I2cSlaveSendByte(DATA_OFFS+i, I2cScl, I2cSda, "E DataData " & to_string(i), I2c_ACK);
 		end loop;
-		I2cSlaveSendByte(DATA_OFFS+3, I2cScl, I2cSda, "C DataData 3", I2c_NACK);
-		I2cSlaveWaitStop(I2cScl, I2cSda, "C Stop");
+		I2cSlaveSendByte(DATA_OFFS+3, I2cScl, I2cSda, "E DataData 3", I2c_NACK);
+		I2cSlaveWaitStop(I2cScl, I2cSda, "E Stop");
+		
+		-- Other master took over bus after Mux related stop/start
+		-- lossing bus during stop/start
+		I2cSlaveWaitStart(I2cScl, I2cSda, "F START");
+		I2cSlaveExpectByte(I2cGetAddr(MUX_ADDR, I2c_WRITE), I2cScl, I2cSda, "F MUX-ADDR", I2c_ACK);
+		I2cSlaveExpectByte(MUX_VAL, I2cScl, I2cSda, "F MUX-DATA", I2c_ACK);
+		I2cSlaveWaitStop(I2cScl, I2cSda, "F MUX-STOP");
+		I2cSlaveWaitStart(I2cScl, I2cSda, "F MUX-START");
+		I2cMasterSendByte(16#00#, I2cScl, I2cSda, "F-Arbit DatAddr", I2c_NACK);
+		I2cMasterSendStop(I2cScl, I2cSda, "F-Arbit Stop");
+		-- retry successfully
+		Slave_1MUX_NOCMD_1DATA(I2cScl, I2cSda, "F");
 		
 		I2cCase <= 1;
 		

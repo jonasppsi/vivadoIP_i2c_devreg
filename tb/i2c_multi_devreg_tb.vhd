@@ -86,13 +86,13 @@ architecture sim of i2c_multi_devreg_tb is
 	-- *** ROMs ***
 	-- Instance A
 	constant CfgRomA_c : CfgRom_t(0 to 1) := (
-		0 => (	HasMux => '1', MuxAddr => X"33", MuxValue => X"AB", DevAddr => X"3D", CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 1, AutoRead => '1', AutoWrite => '0'),
+		0 => (	HasMux => '1', MuxAddr => X"05", MuxValue => X"AB", DevAddr => X"3D", CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 1, AutoRead => '1', AutoWrite => '0'),
 		1 => (	HasMux => '0', MuxAddr => X"00", MuxValue => X"00", DevAddr => X"12", CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 1, AutoRead => '1', AutoWrite => '0')
 	);
 	
 	-- Instance B
 	constant CfgRomB_c : CfgRom_t(0 to 1) := (
-		0 => (	HasMux => '1', MuxAddr => X"33", MuxValue => X"03", DevAddr => X"3D", CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 1, AutoRead => '1', AutoWrite => '0'),
+		0 => (	HasMux => '1', MuxAddr => X"05", MuxValue => X"03", DevAddr => X"3D", CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 1, AutoRead => '1', AutoWrite => '0'),
 		1 => (	HasMux => '0', MuxAddr => X"00", MuxValue => X"00", DevAddr => X"49", CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 1, AutoRead => '1', AutoWrite => '0')
 	);
 	
@@ -284,18 +284,20 @@ begin
 	
 		-- First, Instance B wins arbitration because of its mux value
 		I2cSlaveWaitStart(I2cScl, I2cSda, "Start B0");
-		I2cSlaveExpectByte(I2cGetAddr(16#33#, I2c_WRITE), I2cScl, I2cSda, "MuxAddr B0", I2c_ACK);
+		I2cSlaveExpectByte(I2cGetAddr(16#05#, I2c_WRITE), I2cScl, I2cSda, "MuxAddr B0", I2c_ACK);
 		I2cSlaveExpectByte(16#03#, I2cScl, I2cSda, "MuxValue B0", I2c_ACK);
-		I2cSlaveWaitRepeatedStart(I2cScl, I2cSda, "RepStart B0");
+		I2cSlaveWaitStop(I2cScl, I2cSda, "MuxStop B0");
+		I2cSlaveWaitStart(I2cScl, I2cSda, "MuxStart B0");
 		I2cSlaveExpectByte(I2cGetAddr(16#3D#, I2c_READ), I2cScl, I2cSda, "DevAddr B0", I2c_ACK);
 		I2cSlaveSendByte(16#91#, I2cScl, I2cSda, "Data B0", I2c_NACK);
 		I2cSlaveWaitStop(I2cScl, I2cSda, "Stop B0");
 		
 		-- Then, Instance A wins arbitration because MUX-Addr wins agains Device Addr of Instance B (second access)
 		I2cSlaveWaitStart(I2cScl, I2cSda, "Start A0");
-		I2cSlaveExpectByte(I2cGetAddr(16#33#, I2c_WRITE), I2cScl, I2cSda, "MuxAddr A0", I2c_ACK);
+		I2cSlaveExpectByte(I2cGetAddr(16#05#, I2c_WRITE), I2cScl, I2cSda, "MuxAddr A0", I2c_ACK);
 		I2cSlaveExpectByte(16#AB#, I2cScl, I2cSda, "MuxValue A0", I2c_ACK);
-		I2cSlaveWaitRepeatedStart(I2cScl, I2cSda, "RepStart A0");
+		I2cSlaveWaitStop(I2cScl, I2cSda, "MuxStop A0");
+		I2cSlaveWaitStart(I2cScl, I2cSda, "MuxStart A0");
 		I2cSlaveExpectByte(I2cGetAddr(16#3D#, I2c_READ), I2cScl, I2cSda, "DevAddr A0", I2c_ACK);
 		I2cSlaveSendByte(16#81#, I2cScl, I2cSda, "Data A0", I2c_NACK);
 		I2cSlaveWaitStop(I2cScl, I2cSda, "Stop A0");	

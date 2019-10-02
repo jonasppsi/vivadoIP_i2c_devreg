@@ -31,29 +31,29 @@ I2cDevReg_ErrCode I2cDevReg_DoUpdate(const uint32_t baseAddr)
 
 I2cDevReg_ErrCode I2cDevReg_IrqEnable(const uint32_t baseAddr, const uint32_t irqs)
 {
-	uint32_t regVal = XilIn32(baseAddr + I2C_DEVREG_IRQ_ENA);
-	XilOut32(baseAddr + I2C_DEVREG_IRQ_ENA, regVal | irqs);
+	uint32_t regVal = Xil_In32(baseAddr + I2C_DEVREG_IRQ_ENA);
+	Xil_Out32(baseAddr + I2C_DEVREG_IRQ_ENA, regVal | irqs);
 	return I2cDevReg_Success;
 }
 
 
 I2cDevReg_ErrCode I2cDevReg_IrqDisable(const uint32_t baseAddr, const uint32_t irqs)
 {
-	uint32_t regVal = XilIn32(baseAddr + I2C_DEVREG_IRQ_ENA);
-	XilOut32(baseAddr + I2C_DEVREG_IRQ_ENA, regVal & ~irqs);
+	uint32_t regVal = Xil_In32(baseAddr + I2C_DEVREG_IRQ_ENA);
+	Xil_Out32(baseAddr + I2C_DEVREG_IRQ_ENA, regVal & ~irqs);
 	return I2cDevReg_Success;
 }
 
 
 I2cDevReg_ErrCode I2cDevReg_IrqClear(const uint32_t baseAddr, const uint32_t irqs)
 {
-	XilOut32(baseAddr + I2C_DEVREG_IRQ_VEC, irqs);
+	Xil_Out32(baseAddr + I2C_DEVREG_IRQ_VEC, irqs);
 	return I2cDevReg_Success;
 }
 
 I2cDevReg_ErrCode I2cDevReg_IrqGetVec(const uint32_t baseAddr, uint32_t* const irqVec_p)
 {
-	*irqVec_p = XilIn32(baseAddr + I2C_DEVREG_IRQ_VEC);
+	*irqVec_p = Xil_In32(baseAddr + I2C_DEVREG_IRQ_VEC);
 	return I2cDevReg_Success;
 }
 

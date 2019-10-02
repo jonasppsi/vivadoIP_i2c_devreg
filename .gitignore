@@ -5,3 +5,6 @@ xgui/*_wrp_*.tcl
 #Pycharm Files
 **/.idea/**/*
 *.pyc
+
+#Merging artifacts
+*.bak

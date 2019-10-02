@@ -7,7 +7,8 @@
 ###############################################################
 # Include PSI packaging commands
 ###############################################################
-source ../../../../TCL/PsiIpPackage/PsiIpPackage.tcl
+set FW_LIB_PATH ../../../..
+source $FW_LIB_PATH/TCL/PsiIpPackage/PsiIpPackage.tcl
 namespace import -force psi::ip_package::latest::*
 
 ###############################################################
@@ -31,24 +32,12 @@ set_datasheet_relative "../doc/$IP_NAME.pdf"
 #Relative Source Files
 add_sources_relative { \
 	../hdl/i2c_devreg_rom.vhd \
+	../hdl/i2c_devreg_pkg.vhd \
 }
 
-#**************************************************************
-# Files below are copied because the example_rom folder
-# is likely to be copied around.
-
-#Files from main repo
-add_lib_copied \
-	"../hdl" \
-	"../../hdl"	\
-	{ \
-		i2c_devreg_pkg.vhd \
-	}	
-
 #PSI Common
-add_lib_copied \
-	"../hdl" \
-	"../../../../VHDL/psi_common/hdl"	\
+add_lib_relative \
+	"$FW_LIB_PATH/VHDL/psi_common/hdl"	\
 	{ \
 		psi_common_array_pkg.vhd \
 		psi_common_math_pkg.vhd \

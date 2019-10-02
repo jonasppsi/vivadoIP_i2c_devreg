@@ -30,21 +30,20 @@ package i2c_devreg_pkg is
 		CmdData		: std_logic_vector(31 downto 0);
 		DatBytes	: integer range 0 to 4;
 		AutoRead	: std_logic;
+		AutoWrite	: std_logic;
 	end record;		
 	type CfgRom_t is array (natural range <>) of CfgRomEntry_t;
 
 	-- Indexes to sue when MAP
 	constant Idx_HasMux		: integer	:= 0;
 	subtype Rng_MuxAddr		is natural range Idx_HasMux+8 downto Idx_HasMux+1;
-	subtype Rng_MuxValue		is natural range Rng_MuxAddr'high+8 downto Rng_MuxAddr'high+1;
+	subtype Rng_MuxValue	is natural range Rng_MuxAddr'high+8 downto Rng_MuxAddr'high+1;
 	subtype Rng_DevAddr		is natural range Rng_MuxValue'high+8 downto Rng_MuxValue'high+1;
-	subtype Rng_CmdBytes		is natural range Rng_DevAddr'high+3 downto Rng_DevAddr'high+1;
+	subtype Rng_CmdBytes	is natural range Rng_DevAddr'high+3 downto Rng_DevAddr'high+1;
 	subtype Rng_CmdData		is natural range Rng_CmdBytes'high+32 downto Rng_CmdBytes'high+1;
-	subtype Rng_DatBytes		is natural range Rng_CmdData'high+3 downto Rng_CmdData'high+1;
+	subtype Rng_DatBytes	is natural range Rng_CmdData'high+3 downto Rng_CmdData'high+1;
 	constant Idx_AutoRead	: integer	:= Rng_DatBytes'high+1;	
-	
-	-- Size of the std_logic_vector to reperesent a ROM entry
-	constant RomEntrySlvBits_c			: integer	:= Idx_AutoRead+1;
+	constant Idx_AutoWrite 	: integer	:= Idx_AutoRead+1;
 	
 	-- Convert record to std_logic_vector									
 	function RomEntryRomToSlv(Inp : in CfgRomEntry_t) return std_logic_vector;
@@ -78,30 +77,32 @@ package body i2c_devreg_pkg is
 
 
 	function RomEntryRomToSlv(Inp : in CfgRomEntry_t) return std_logic_vector is
-		variable Slv_v : std_logic_vector(RomEntrySlvBits_c-1 downto 0);
+		variable Slv_v : std_logic_vector(71 downto 0);
 	begin
-		Slv_v(Idx_HasMux) 	:= Inp.HasMux;
-		Slv_v(Rng_MuxAddr) 	:= Inp.MuxAddr;
+		Slv_v(Idx_HasMux) 		:= Inp.HasMux;
+		Slv_v(Rng_MuxAddr) 		:= Inp.MuxAddr;
 		Slv_v(Rng_MuxValue) 	:= Inp.MuxValue;
-		Slv_v(Rng_DevAddr) 	:= Inp.DevAddr;
+		Slv_v(Rng_DevAddr) 		:= Inp.DevAddr;
 		Slv_v(Rng_CmdBytes) 	:= std_logic_vector(to_unsigned(Inp.CmdBytes, 3));
-		Slv_v(Rng_CmdData) 	:= Inp.CmdData;
+		Slv_v(Rng_CmdData) 		:= Inp.CmdData;
 		Slv_v(Rng_DatBytes) 	:= std_logic_vector(to_unsigned(Inp.DatBytes, 3));
 		Slv_v(Idx_AutoRead) 	:= Inp.AutoRead;
+		Slv_v(Idx_AutoWrite)	:= Inp.AutoWrite;
 		return Slv_v;
 	end function;
 		
 	function SlvToRomEntry(	Inp : in std_logic_vector) return CfgRomEntry_t is
 		variable Data_v : CfgRomEntry_t;
 	begin
-		Data_v.HasMux	:= Inp(Idx_HasMux);
-		Data_v.MuxAddr	:= Inp(Rng_MuxAddr); 	
-		Data_v.MuxValue	:= Inp(Rng_MuxValue); 
-		Data_v.DevAddr	:= Inp(Rng_DevAddr);
-		Data_v.CmdBytes	:= to_integer(unsigned(Inp(Rng_CmdBytes))); 
-		Data_v.CmdData	:= Inp(Rng_CmdData);
-		Data_v.DatBytes	:= to_integer(unsigned(Inp(Rng_DatBytes))); 
-		Data_v.AutoRead	:= Inp(Idx_AutoRead);
+		Data_v.HasMux		:= Inp(Idx_HasMux);
+		Data_v.MuxAddr		:= Inp(Rng_MuxAddr); 	
+		Data_v.MuxValue		:= Inp(Rng_MuxValue); 
+		Data_v.DevAddr		:= Inp(Rng_DevAddr);
+		Data_v.CmdBytes		:= to_integer(unsigned(Inp(Rng_CmdBytes))); 
+		Data_v.CmdData		:= Inp(Rng_CmdData);
+		Data_v.DatBytes		:= to_integer(unsigned(Inp(Rng_DatBytes))); 
+		Data_v.AutoRead		:= Inp(Idx_AutoRead);
+		Data_v.AutoWrite	:= Inp(Idx_AutoWrite);
 		return Data_v;
 	end function;
 	

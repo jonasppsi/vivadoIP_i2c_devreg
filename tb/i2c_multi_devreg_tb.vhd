@@ -86,14 +86,14 @@ architecture sim of i2c_multi_devreg_tb is
 	-- *** ROMs ***
 	-- Instance A
 	constant CfgRomA_c : CfgRom_t(0 to 1) := (
-		0 => (	HasMux => '1', MuxAddr => X"33", MuxValue => X"AB", DevAddr => X"3D", CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 1, AutoRead => '1'),
-		1 => (	HasMux => '0', MuxAddr => X"00", MuxValue => X"00", DevAddr => X"12", CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 1, AutoRead => '1')
+		0 => (	HasMux => '1', MuxAddr => X"33", MuxValue => X"AB", DevAddr => X"3D", CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 1, AutoRead => '1', AutoWrite => '0'),
+		1 => (	HasMux => '0', MuxAddr => X"00", MuxValue => X"00", DevAddr => X"12", CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 1, AutoRead => '1', AutoWrite => '0')
 	);
 	
 	-- Instance B
 	constant CfgRomB_c : CfgRom_t(0 to 1) := (
-		0 => (	HasMux => '1', MuxAddr => X"33", MuxValue => X"03", DevAddr => X"3D", CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 1, AutoRead => '1'),
-		1 => (	HasMux => '0', MuxAddr => X"00", MuxValue => X"00", DevAddr => X"49", CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 1, AutoRead => '1')
+		0 => (	HasMux => '1', MuxAddr => X"33", MuxValue => X"03", DevAddr => X"3D", CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 1, AutoRead => '1', AutoWrite => '0'),
+		1 => (	HasMux => '0', MuxAddr => X"00", MuxValue => X"00", DevAddr => X"49", CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 1, AutoRead => '1', AutoWrite => '0')
 	);
 	
 	-- *** Helper Functions ***

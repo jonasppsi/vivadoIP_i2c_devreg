@@ -74,7 +74,7 @@ architecture sim of top_tb is
 	signal I2cRom_TValid	: std_logic						:= '0';
 	signal I2cRom_TData		: std_logic_vector(31 downto 0)	:= (others => '0');
 	signal RomI2c_TValid	: std_logic						:= '0';
-	signal RomI2c_TData		: std_logic_vector(63 downto 0)	:= (others => '0');
+	signal RomI2c_TData		: std_logic_vector(71 downto 0)	:= (others => '0');
 	signal UpdateTrig		: std_logic						:= '0';
 	signal Irq				: std_logic						:= '0';
 	
@@ -155,11 +155,11 @@ begin
 	p_rom : process(aclk)
 		constant RomContent : CfgRom_t(0 to 2**log2ceil(NumReg_c)-1) := (
 			-- << ROM_CONTENT >>
-			0       => (AutoRead => '1', HasMux => '0',	MuxAddr => X"00", 	MuxValue => X"00", 	DevAddr => X"12",	CmdBytes => 1,	CmdData => X"000000AB",	DatBytes => 1),
-			1       => (AutoRead => '0', HasMux => '0',	MuxAddr => X"00", 	MuxValue => X"00", 	DevAddr => X"12",	CmdBytes => 1,	CmdData => X"000000A0",	DatBytes => 1),
-			2       => (AutoRead => '1', HasMux => '1',	MuxAddr => X"0A", 	MuxValue => X"CD", 	DevAddr => X"13",	CmdBytes => 1,	CmdData => X"000000E0",	DatBytes => 2),
+			0       => (AutoRead => '1', HasMux => '0',	MuxAddr => X"00", 	MuxValue => X"00", 	DevAddr => X"12",	CmdBytes => 1,	CmdData => X"000000AB",	DatBytes => 1, AutoWrite => '0'),
+			1       => (AutoRead => '0', HasMux => '0',	MuxAddr => X"00", 	MuxValue => X"00", 	DevAddr => X"12",	CmdBytes => 1,	CmdData => X"000000A0",	DatBytes => 1, AutoWrite => '0'),
+			2       => (AutoRead => '1', HasMux => '1',	MuxAddr => X"0A", 	MuxValue => X"CD", 	DevAddr => X"13",	CmdBytes => 1,	CmdData => X"000000E0",	DatBytes => 2, AutoWrite => '0'),
 			-- << END_ROM_CONTENT >>
-			others 	=> (AutoRead => '0', HasMux => '0',	MuxAddr => X"00", 	MuxValue => X"00", 	DevAddr => X"00",	CmdBytes => 0,	CmdData => X"00000000",	DatBytes => 0)
+			others 	=> (AutoRead => '0', HasMux => '0',	MuxAddr => X"00", 	MuxValue => X"00", 	DevAddr => X"00",	CmdBytes => 0,	CmdData => X"00000000",	DatBytes => 0, AutoWrite => '0')
 		);
 		constant RomAddrBits_c		: integer	:= log2ceil(NumReg_c);
 	begin

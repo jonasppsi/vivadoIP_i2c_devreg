@@ -61,7 +61,7 @@ entity i2c_devreg_vivado_wrp is
 		
 		-- Data From ROM
 		RomI2c_TValid	: in	std_logic;
-		RomI2c_TData	: in	std_logic_vector(63 downto 0);
+		RomI2c_TData	: in	std_logic_vector(71 downto 0);
 		
 		-----------------------------------------------------------------------------
 		-- Parallel Ports

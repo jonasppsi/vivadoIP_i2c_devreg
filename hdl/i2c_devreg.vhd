@@ -226,12 +226,19 @@ begin
 				v.RetryAfterStop 	:= '0';
 				if FromRomVld = '1' then
 					v.RomEntry := FromRomEntry;
-					-- Skip if it is not an auto-read and not a user operation
-					if (FromRomEntry.AutoRead = '0') and (r.IsFifoOperation = '0') then
-						v.Fsm := UpdCheck_s;
-					-- Execute access otherwise
-					else
+					-- FIFO Operation: Always execute
+					if r.IsFifoOperation = '1' then
 						v.Fsm := Start_s;
+					-- Update operation
+					else
+						-- Do not execute if it is not an Auto-operation
+						if (FromRomEntry.AutoRead = '0') and (FromRomEntry.AutoWrite = '0') then
+							v.Fsm := UpdCheck_s;
+						-- Otherwise execute and check if it is read or write
+						else
+							v.IsWriteAccess := FromRomEntry.AutoWrite;
+							v.Fsm := Start_s;
+						end if;
 					end if;
 				end if;
 

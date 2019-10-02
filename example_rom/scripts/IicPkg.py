@@ -7,12 +7,18 @@ from typing import Iterable, Tuple
 
 __all__ = ["Device", "Register", "Component"]
 
+def BoolToStdl(val : bool) -> str:
+    if val:
+        return "'1'"
+    else:
+        return "'0'"
+
 class Register:
     """
     This class encapsulates the information about an I2C device register
     """
 
-    def __init__(self, name : str, cmdBytes : int = 0, cmd : int = 0, dataBytes : int = 0, autoRead : bool = False):
+    def __init__(self, name : str, cmdBytes : int = 0, cmd : int = 0, dataBytes : int = 0, autoRead : bool = False, autoWrite : bool = False):
         """
         Constructor
 
@@ -21,18 +27,16 @@ class Register:
         :param cmd: Command (only the lower bits may be used, depending on cmdBytes)
         :param dataBytes: Number of data bytes (0-4)
         :param autoRead: If true, the register is read during update cycles
+        :param autoWrite: If true, the register is writting during udpdate cycles
         """
         self.name = name
         self.cmdBytes = cmdBytes
         self.cmd = cmd
         self.dataBytes = dataBytes
         self.autoRead = autoRead
-
-    def _AutoReadAsStdl(self) -> str:
-        if self.autoRead:
-            return "'1'"
-        else:
-            return "'0'"
+        self.autoWrite = autoWrite
+        if autoWrite and autoRead:
+            raise Exception("A register can only be autoRead or autoWrite, not both!")
 
 class Device:
 
@@ -67,13 +71,6 @@ class Device:
 
     def _GetAllRegisters(self) -> Iterable[Register]:
         return self.registers
-
-    def _HasMuxAsStdl(self) -> str:
-        if self.hasMux:
-            return "'1'"
-        else:
-            return "'0'"
-
 
 
 class Component:
@@ -134,8 +131,8 @@ class Component:
                 else:
                     usedIndexes.append(thisIdx)
                 #Create header Line
-                hdrStr += "#define {:40} 0x{:08x} // DataBytes = {}, CmdBytes = {}, Cmd = 0x{:08x}, AutoUpdate = {}"\
-                    .format("{}_{}_{}".format(CharConv(self.name), CharConv(dev.name), CharConv(reg.name)), thisIdx, reg.dataBytes, reg.cmdBytes, reg.cmd, reg.autoRead)
+                hdrStr += "#define {:40} 0x{:08x} // DataBytes = {}, CmdBytes = {}, Cmd = 0x{:08x}, AutoRead = {}, AutoWrite = {}"\
+                    .format("{}_{}_{}".format(CharConv(self.name), CharConv(dev.name), CharConv(reg.name)), thisIdx, reg.dataBytes, reg.cmdBytes, reg.cmd, reg.autoRead, reg.autoWrite)
                 hdrStr += "\n"
 
         with open(path, "r") as f:
@@ -183,8 +180,15 @@ class Component:
                 else:
                     usedIndexes.append(thisIdx)
                 #Create VHDL Line
-                vhdlStr += "\t\t{idx}\t=> (AutoRead => {autoRd}, HasMux => {hasMux}, MuxAddr => X\"{muxAddr:02X}\", MuxValue => X\"{muxValue:02X}\", DevAddr => X\"{devAddr:02X}\", CmdBytes => {cmdBytes}, CmdData => X\"{cmdData:08X}\", DatBytes => {datBytes}), -- {comment}\n"\
-                    .format(idx=thisIdx, autoRd=reg._AutoReadAsStdl(), hasMux=dev._HasMuxAsStdl(), muxAddr=dev.muxAddr, muxValue=dev.muxValue, devAddr=dev.devAddr, cmdBytes=reg.cmdBytes, cmdData=reg.cmd, datBytes=reg.dataBytes, comment=reg.name)
+                vhdlStr +=  ("\t\t{idx}\t=> (" +
+                            "AutoRead => {autoRd}, AutoWrite => {autoWr}, HasMux => {hasMux}, " +
+                            "MuxAddr => X\"{muxAddr:02X}\", MuxValue => X\"{muxValue:02X}\", " +
+                            "DevAddr => X\"{devAddr:02X}\", CmdBytes => {cmdBytes}, CmdData => X\"{cmdData:08X}\", "+
+                            "DatBytes => {datBytes}), -- {comment}\n")\
+                            .format(idx=thisIdx, autoRd=BoolToStdl(reg.autoRead), autoWr=BoolToStdl(reg.autoWrite),
+                                    hasMux=BoolToStdl(dev.hasMux), muxAddr=dev.muxAddr, muxValue=dev.muxValue,
+                                    devAddr=dev.devAddr, cmdBytes=reg.cmdBytes, cmdData=reg.cmd, datBytes=reg.dataBytes,
+                                    comment=reg.name)
             vhdlStr += "\n"
 
         #Substitute Content in VHDL file

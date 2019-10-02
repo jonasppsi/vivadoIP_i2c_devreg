@@ -131,27 +131,31 @@ architecture sim of i2c_devreg_tb is
 	-- ROM Contents
 	constant ROM_NOMUX_NOCMD_1DATA : CfgRomEntry_t :=  (	
 		HasMux => '0',  MuxAddr => (others => 'X'), MuxValue => (others => 'X'), DevAddr => AddrSlv(SLAVE_ADDR),  
-		CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 1, AutoRead => '1');
+		CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 1, AutoRead => '1', AutoWrite => '0');
 
 	constant ROM_1MUX_NOCMD_1DATA : CfgRomEntry_t := (
 		HasMux => '1',  MuxAddr => AddrSlv(MUX_ADDR), MuxValue => MUX_VAL_SLV, DevAddr => AddrSlv(SLAVE_ADDR),  
-		CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 1, AutoRead => '1');
+		CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 1, AutoRead => '1', AutoWrite => '0');
 		
 	constant ROM_NOMUX_1CMD_1DATA : CfgRomEntry_t := (
 		HasMux => '0',  MuxAddr => (others => 'X'), MuxValue => (others => 'X'), DevAddr => AddrSlv(SLAVE_ADDR),  
-		CmdBytes => 1, CmdData => CMD_BYTES(1), DatBytes => 1, AutoRead => '1');
+		CmdBytes => 1, CmdData => CMD_BYTES(1), DatBytes => 1, AutoRead => '1', AutoWrite => '0');
+		
+	constant ROM_NOMUX_2CMD_NODATA : CfgRomEntry_t := (
+		HasMux => '0',  MuxAddr => (others => 'X'), MuxValue => (others => 'X'), DevAddr => AddrSlv(SLAVE_ADDR),  
+		CmdBytes => 2, CmdData => CMD_BYTES(2), DatBytes => 0, AutoRead => '1', AutoWrite => '0');
 
 	constant ROM_1MUX_2CMD_1DATA : CfgRomEntry_t := (
 		HasMux => '1',  MuxAddr => AddrSlv(MUX_ADDR), MuxValue => MUX_VAL_SLV, DevAddr => AddrSlv(SLAVE_ADDR),  
-		CmdBytes => 2, CmdData => CMD_BYTES(2), DatBytes => 1, AutoRead => '1');
+		CmdBytes => 2, CmdData => CMD_BYTES(2), DatBytes => 1, AutoRead => '1', AutoWrite => '0');
 		
 	constant ROM_NOMUX_NOCMD_4DATA : CfgRomEntry_t := (
 		HasMux => '0',  MuxAddr => (others => 'X'), MuxValue => (others => 'X'), DevAddr => AddrSlv(SLAVE_ADDR),  
-		CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 4, AutoRead => '1');
+		CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 4, AutoRead => '1', AutoWrite => '0');
 		
 	constant ROM_UNUSED : CfgRomEntry_t := (
 		HasMux => '0',  MuxAddr => (others => 'X'), MuxValue => (others => 'X'), DevAddr => (others => 'X'),
-		CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 0, AutoRead => '0');
+		CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 0, AutoRead => '0', AutoWrite => '0');
 	
 	shared variable CfgRom : CfgRom_t(0 to 2**log2ceil(NumOfReg_g)-1) := (others => ROM_UNUSED);
 	
@@ -365,7 +369,7 @@ begin
 		for i in 1 to 4 loop
 			wait for 5 us;
 			CfgRom(1) := (	HasMux => '0',  MuxAddr => (others => 'X'), MuxValue => (others => 'X'), DevAddr => AddrSlv(SLAVE_ADDR),  
-							CmdBytes => i, CmdData => CMD_BYTES(i), DatBytes => 1, AutoRead => '1');
+							CmdBytes => i, CmdData => CMD_BYTES(i), DatBytes => 1, AutoRead => '1', AutoWrite => '0');
 			PulseSig(UpdateTrig, Clk);
 			wait for 1 us;
 			ClockedWaitFor('0', BusBusy, Clk);
@@ -399,9 +403,44 @@ begin
 		WaitForCase(I2cCase, 1);		
 		wait for 10 us;		
 		
+		-- *** Test Single Auto Write ***
+		print(">> Test Single Auto Write");
+		CfgRom := (others => ROM_UNUSED);
+		StimCase <= 2;	
+		wait until rising_edge(Clk);
+
+		-- 0 Byte, no Mux, 2 cmd
+		CfgRom(1) := ROM_NOMUX_2CMD_NODATA;
+		CfgRom(1).AutoRead := '0';
+		CfgRom(1).AutoWrite := '1';
+		WaitClockCycles(5, Clk);
+		PulseSig(UpdateTrig, Clk);
+		WaitClockCycles(10, Clk);
+		ClockedWaitFor('0', BusBusy, Clk);
+
+		-- 1 Byte, no Mux, no cmd
+		CfgRom(1) := ROM_NOMUX_NOCMD_1DATA;
+		CfgRom(1).AutoRead := '0';
+		CfgRom(1).AutoWrite := '1';
+		RegAddr <= std_logic_vector(to_unsigned(1, RegAddr'length));
+		RegDin  <= std_logic_vector(to_unsigned(DATA_OFFS+3, 32));
+		PulseSig(RegI2cWrite, Clk);
+		RegAddr <= (others => 'X');
+		RegDin <= (others => 'X');
+		WaitClockCycles(5, Clk);
+		ClockedWaitFor('1', RegFifoEmpty, Clk);
+		PulseSig(UpdateTrig, Clk);
+		wait for 1 us;		
+		ClockedWaitFor('0', BusBusy, Clk);
+		TestMemContent(1, DATA_OFFS+3, Clk, RegAddr, RegDout);
+		
+		WaitForCase(I2cCase, 2);		
+		wait for 10 us;
+
+		
 		-- *** Test Multi Auto Read ***
 		print(">> Test Multi Auto Read ");
-		StimCase <= 2;	
+		StimCase <= 3;	
 		wait until rising_edge(Clk);
 	
 		-- Configure
@@ -418,14 +457,14 @@ begin
 		-- Restore
 		CfgRom := (others => ROM_UNUSED);
 		
-		WaitForCase(I2cCase, 2);		
+		WaitForCase(I2cCase, 3);		
 		wait for 10 us;	
 		
 		
 		-- *** Test NACK retry ***	
 		-- Only some cases are tested because they all boil down to the same state in i2c_devreg anyway.
 		print(">> Test NACK retry ");
-		StimCase <= 3;	
+		StimCase <= 4;	
 		wait until rising_edge(Clk);
 					
 		-- Retry on Mux-Addr NACK
@@ -469,12 +508,12 @@ begin
 		TestMemContent(2, DATA_OFFS+0, Clk, RegAddr, RegDout, "2");
 		CfgRom := (others => ROM_UNUSED);
 					
-		WaitForCase(I2cCase, 3);		
+		WaitForCase(I2cCase, 4);		
 		wait for 10 us;	
 		
 		-- *** Test Arbitration Behavior ***
 		print(">> Test Arbitration Behavior ");
-		StimCase <= 4;	
+		StimCase <= 5;	
 		wait until rising_edge(Clk);		
 		
 		-- Retry after lost arbitration
@@ -493,7 +532,7 @@ begin
 		ClockedWaitFor('1', UpdateDone, Clk);
 		TestMemContent(1, DATA_OFFS+1, Clk, RegAddr, RegDout, "1");
 		
-		WaitForCase(I2cCase, 4);		
+		WaitForCase(I2cCase, 5);		
 		wait for 10 us;	
 		
 		-- *** Test User Triggered Reads ***
@@ -501,7 +540,7 @@ begin
 		CfgRom := (others => ROM_UNUSED);
 		CfgRom(1) := ROM_NOMUX_NOCMD_1DATA;
 		CfgRom(2) := ROM_1MUX_NOCMD_1DATA;
-		StimCase <= 5;	
+		StimCase <= 6;	
 		wait until rising_edge(Clk);
 		
 		-- Single Read
@@ -580,7 +619,7 @@ begin
 		TestMemContent(1, 16#FFFFFFFF#, Clk, RegAddr, RegDout, "NACK retry failing");	
 		wait for 5 us;			
 
-		WaitForCase(I2cCase, 5);		
+		WaitForCase(I2cCase, 6);		
 		wait for 10 us;	
 
 		-- *** Test User Triggered Writes ***
@@ -588,7 +627,7 @@ begin
 		CfgRom := (others => ROM_UNUSED);
 		CfgRom(1) := ROM_NOMUX_NOCMD_1DATA;
 		CfgRom(2) := ROM_1MUX_NOCMD_1DATA;
-		StimCase <= 6;	
+		StimCase <= 7;	
 		wait until rising_edge(Clk);
 		
 		-- Single Write
@@ -664,24 +703,21 @@ begin
 		TestMemContent(1, DATA_OFFS+3, Clk, RegAddr, RegDout, "NACK data");	
 		wait for 5 us;
 
-		WaitForCase(I2cCase, 6);		
+		WaitForCase(I2cCase, 7);		
 		wait for 10 us;		
 
 		-- *** Test Update Timer ***
 		print(">> Test Update Timer ");
 		CfgRom := (others => ROM_UNUSED);
 		CfgRom(1) := ROM_NOMUX_NOCMD_1DATA;
-		StimCase <= 7;	
+		StimCase <= 8;	
 		wait until rising_edge(Clk);
 		
 		WaitForValueStdl(UpdateDone, '1', UpdatePeriod_g*(1 sec), "Update did not happen");
 		TestMemContent(1, DATA_OFFS+5, Clk, RegAddr, RegDout, "Wrong data");	
 		
-		WaitForCase(I2cCase, 7);		
+		WaitForCase(I2cCase, 8);		
 		wait for 10 us;			
-		
-		-- TODO: Multi Master TB
-		-- TODO: IRQ on user actions
 
 		wait for 100 us;
 		
@@ -739,8 +775,31 @@ begin
 		
 		I2cCase <= 1;
 		
-		-- *** Test Multi Auto Read ***
+		-- *** Test Single Auto Write ***
 		WaitForCase(StimCase, 2);
+		
+		-- 0 Byte, no Mux, 2 cmd
+		I2cSlaveWaitStart(I2cScl, I2cSda, "A START");
+		I2cSlaveExpectByte(I2cGetAddr(SLAVE_ADDR, I2c_WRITE), I2cScl, I2cSda, "A CMD-ADDR", I2c_ACK);
+		I2cSlaveExpectByte(CMD_OFFS+0, I2cScl, I2cSda, "A CMD-BYTE0", I2c_ACK);
+		I2cSlaveExpectByte(CMD_OFFS+1, I2cScl, I2cSda, "A CMD-BYTE1", I2c_ACK);
+		I2cSlaveWaitStop(I2cScl, I2cSda, "A STOP");
+			
+		-- 1 Byte, no Mux, no cmd
+		-- the access happens twice (once for writing the RAM, once in the update cycle)
+		for i in 0 to 1 loop
+			I2cSlaveWaitStart(I2cScl, I2cSda, "B START");
+			I2cSlaveExpectByte(I2cGetAddr(SLAVE_ADDR, I2c_WRITE), I2cScl, I2cSda, "B DATA-ADDR", I2c_ACK);
+			I2cSlaveExpectByte(DATA_OFFS+3, I2cScl, I2cSda, "B DATA-BYTE0", I2c_ACK);
+			I2cSlaveWaitStop(I2cScl, I2cSda, "B STOP");
+		end loop;
+		
+		-- TODO: cmd only
+		
+		I2cCase <= 2;
+		
+		-- *** Test Multi Auto Read ***
+		WaitForCase(StimCase, 3);
 		
 		-- 1 Byte, no Mux, no cmd
 		Slave_NOMUX_NOCMD_1DATA(I2cScl, I2cSda, "A");
@@ -751,10 +810,10 @@ begin
 		-- 1 Byte Mux, Mux, no cmd
 		Slave_1MUX_NOCMD_1DATA(I2cScl, I2cSda, "C", DataOffs => 2);
 		
-		I2cCase <= 2;
+		I2cCase <= 3;
 		
 		-- *** Test NACK retry ***	
-		WaitForCase(StimCase, 3);
+		WaitForCase(StimCase, 4);
 		
 		-- Retry on Mux-Addr NACK
 		-- .. Stop after failing transfer
@@ -806,10 +865,10 @@ begin
 		-- .. and check if next transfer is fine 
 		Slave_NOMUX_1CMD_1DATA(I2cScl, I2cSda, "B", DataOffs => 0);		
 		
-		I2cCase <= 3;
+		I2cCase <= 4;
 		
 		-- *** Test Arbitration Behavior ***
-		WaitForCase(StimCase, 4);	
+		WaitForCase(StimCase, 5);	
 		
 		-- Retry after lost arbitration
 		-- .. Loose arbitration
@@ -827,10 +886,10 @@ begin
 		-- .. check access after bus is free
 		Slave_NOMUX_NOCMD_1DATA(I2cScl, I2cSda, "B -Transfer", DataOffs => 1);
 		
-		I2cCase <= 4;
+		I2cCase <= 5;
 		
 		-- *** Test User Triggered Reads ***
-		WaitForCase(StimCase, 5);
+		WaitForCase(StimCase, 6);
 		
 		-- Single Read
 		Slave_NOMUX_NOCMD_1DATA(I2cScl, I2cSda, "A", DataOffs => 3);
@@ -868,10 +927,10 @@ begin
 			I2cSlaveWaitStop(I2cScl, I2cSda, "F-Fail Stop " & to_string(i));
 		end loop;
 		
-		I2cCase <= 5;
+		I2cCase <= 6;
 		
 		-- *** Test User Triggered Writes ***
-		WaitForCase(StimCase, 6);
+		WaitForCase(StimCase, 7);
 		
 		-- Single Write
 		I2cSlaveWaitStart(I2cScl, I2cSda, "A START");
@@ -921,15 +980,15 @@ begin
 		I2cSlaveExpectByte(DATA_OFFS+3, I2cScl, I2cSda, "E DATA-BYTE0", I2c_ACK);
 		I2cSlaveWaitStop(I2cScl, I2cSda, "E STOP");				
 		
-		I2cCase <= 6;
+		I2cCase <= 7;
 		
 		-- *** Test Update Timer ***
-		WaitForCase(StimCase, 7);
+		WaitForCase(StimCase, 8);
 		
 		-- 1 Byte, no Mux, no cmd
 		Slave_NOMUX_NOCMD_1DATA(I2cScl, I2cSda, "A", DataOffs => 5);
 
-		I2cCase <= 7;
+		I2cCase <= 8;
 		
 		-- end of process !DO NOT EDIT!
 		ProcessDone(TbProcNr_i2c_c) <= '1';

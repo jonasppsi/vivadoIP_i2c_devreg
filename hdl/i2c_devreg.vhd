@@ -114,6 +114,7 @@ architecture rtl of i2c_devreg is
 		I2cCmdData		: std_logic_vector(7 downto 0);
 		I2cCmdAck		: std_logic;
 		ByteCnt			: integer range 0 to 3;
+		DByteNumber		: integer range -1 to 3;		-- 0...3 = data bytes, -1 = address byte
 		RecData			: std_logic_vector(31 downto 0);
 		RamWr			: std_logic;
 		RamAddr			: std_logic_vector(RomAddrBits_c-1 downto 0);
@@ -184,7 +185,8 @@ begin
 			-- Idles
 			---------------------------------------------------------------------
 			when Idle_s =>
-				v.RomAddr	:= 0;
+				v.DByteNumber	:= 0;
+				v.RomAddr		:= 0;
 				if (r.UpdatePending = '1') or (FifoEmptyI = '0') then
 					v.Fsm	:= UpdCheck_s;
 				end if;
@@ -278,7 +280,17 @@ begin
 					end if;
 					-- For reads, receive the data
 					if I2cRspType = CMD_REC then
-						v.RecData	:= r.RecData(23 downto 0) & I2cRspData;
+						-- Reverse byte order (LSByte first)
+						if r.RomEntry.DataLSByteFirst = '1' then
+							v.RecData(8*r.DByteNumber+7 downto 8*r.DByteNumber) := I2cRspData;
+						-- Normal byte order (MSByte first)
+						else
+							v.RecData	:= r.RecData(23 downto 0) & I2cRspData;
+						end if;
+					end if;
+					-- Increment byte number
+					if r.DByteNumber /= 3 then
+						v.DByteNumber := r.DByteNumber+1;
 					end if;
 				end if;
 				
@@ -354,7 +366,7 @@ begin
 					v.Fsm	:= DataAddr_s;
 				-- Apply Address otherwise
 				else
-					v.ByteCnt := r.RomEntry.CmdBytes-1;
+					v.ByteCnt 		:= r.RomEntry.CmdBytes-1;
 					v.I2cCmdType	:= CMD_SEND;					
 					v.I2cCmdData	:= r.RomEntry.DevAddr(6 downto 0) & '0';	-- Command is always written R/W=0
 					v.FsmNext		:= CmdValue_s;
@@ -393,7 +405,8 @@ begin
 					v.Fsm	:= Stop_s;
 				-- Apply Address otherwise
 				else
-					v.ByteCnt := r.RomEntry.DatBytes-1;
+					v.ByteCnt 		:= r.RomEntry.DatBytes-1;
+					v.DByteNumber	:= -1;
 					v.I2cCmdType	:= CMD_SEND;	
 					v.I2cCmdData	:= r.RomEntry.DevAddr(6 downto 0) & not r.IsWriteAccess;	
 					v.FsmNext		:= DataValue_s;
@@ -405,12 +418,17 @@ begin
 				if r.RomEntry.DatBytes = 0 then
 					v.Fsm	:= Stop_s;
 				-- Do access otherwise
-				else
-				
+				else				
 					-- Write 
 					if r.IsWriteAccess = '1' then
 						v.I2cCmdType		:= CMD_SEND;
-						v.I2cCmdData		:= r.WriteData(r.ByteCnt*8+7 downto r.ByteCnt*8);
+						-- Reverse Byte Order
+						if r.RomEntry.DataLSByteFirst = '1' then
+							v.I2cCmdData		:= r.WriteData(r.DByteNumber*8+7 downto r.DByteNumber*8);
+						-- Normal Byte Order
+						else
+							v.I2cCmdData		:= r.WriteData(r.ByteCnt*8+7 downto r.ByteCnt*8);
+						end if;
 					-- Read
 					else
 						v.I2cCmdType		:= CMD_REC;

@@ -43,6 +43,18 @@ Note that the [dependencies package](https://github.com/paulscherrerinstitute/Ps
 This IP-core implements mirroring of I2C device regsiter into a BRAM. This prevents the CPU from having high IRQ load due to many I2C accesses to execute in board-management systems with many I2C components. For details, refer to the [Datasheet](doc/i2c_devreg.pdf) The functionality is described there in more detail.
 
 
+# Reference Design
+A reference design for the Xilinx ZCU102 board is provided in the folder *refdesign/ZCU102*. To execute the reference design, follow the steps below:
+
+1. In the Vivado TCL console, navigate to the directory *[root]/refdesign/ZCU102*
+2. run *source ./project.tcl*
+3. Build a bitstream and export it (export HW -> Include bitstream)
+4. In SDK, open a new workspace
+5. In SDK, import all projects from *[root]/refdesign/ZCU102/SDK*
+6. In SDK, update the HW platform specification with the one exported in step 3
+7. Run the project
+
+
 # Simulations and Testbenches
 
 A regression test script for Modelsim is present. To run the regression test, execute the following command in modelsim from within the directory *sim*

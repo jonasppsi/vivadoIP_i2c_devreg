@@ -32,8 +32,14 @@ set_datasheet_relative "../doc/$IP_NAME.pdf"
 #Relative Source Files
 add_sources_relative { \
 	../hdl/i2c_devreg_rom.vhd \
-	../hdl/i2c_devreg_pkg.vhd \
 }
+
+#PSI Common
+add_lib_relative \
+	"$FW_LIB_PATH/VivadoIP/vivadoIp_i2c_devreg/hdl"	\
+	{ \
+		i2c_devreg_pkg.vhd \
+	}	
 
 #PSI Common
 add_lib_relative \

@@ -46,13 +46,12 @@ architecture rtl of i2c_devreg_rom is
 		-----------------------------------------------------------------------------
 		-- SI5341
 		-----------------------------------------------------------------------------
-		0	=> (AutoRead => '0', AutoWrite => '1', HasMux => '1', MuxAddr => X"74", MuxValue => X"02", DevAddr => X"36", CmdBytes => 2, CmdData => X"00000100", DatBytes => 0), -- SetPage0
-		1	=> (AutoRead => '1', AutoWrite => '0', HasMux => '1', MuxAddr => X"74", MuxValue => X"02", DevAddr => X"36", CmdBytes => 1, CmdData => X"00000002", DatBytes => 2), -- PartNumber
-		2	=> (AutoRead => '1', AutoWrite => '0', HasMux => '1', MuxAddr => X"74", MuxValue => X"02", DevAddr => X"36", CmdBytes => 1, CmdData => X"00000018", DatBytes => 1), -- LosIn_Mask
-		3	=> (AutoRead => '0', AutoWrite => '1', HasMux => '1', MuxAddr => X"74", MuxValue => X"02", DevAddr => X"36", CmdBytes => 1, CmdData => X"00000001", DatBytes => 1), -- UserPage
+		0	=> (AutoRead => '0', AutoWrite => '1', HasMux => '1', MuxAddr => X"74", MuxValue => X"02", DevAddr => X"36", CmdBytes => 2, CmdData => X"00000100", DatBytes => 0, DataLSByteFirst => '0'), -- SetPage0
+		1	=> (AutoRead => '1', AutoWrite => '0', HasMux => '1', MuxAddr => X"74", MuxValue => X"02", DevAddr => X"36", CmdBytes => 1, CmdData => X"00000002", DatBytes => 2, DataLSByteFirst => '1'), -- PartNumber
+		2	=> (AutoRead => '1', AutoWrite => '0', HasMux => '1', MuxAddr => X"74", MuxValue => X"02", DevAddr => X"36", CmdBytes => 1, CmdData => X"00000018", DatBytes => 1, DataLSByteFirst => '0'), -- LosIn_Mask
 
 		-- << END_ROM_CONTENT >>
-		others 	=> (AutoRead => '0', AutoWrite => '0', HasMux => '0',	MuxAddr => X"00", 	MuxValue => X"00", 	DevAddr => X"00",	CmdBytes => 0,	CmdData => X"00000000",	DatBytes => 0)
+		others 	=> (AutoRead => '0', AutoWrite => '0', HasMux => '0',	MuxAddr => X"00", 	MuxValue => X"00", 	DevAddr => X"00",	CmdBytes => 0,	CmdData => X"00000000",	DatBytes => 0, DataLSByteFirst => '0')
 	); 	
 	
 	-- Constants

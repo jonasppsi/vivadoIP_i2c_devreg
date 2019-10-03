@@ -46,17 +46,17 @@ architecture rtl of i2c_devreg_rom is
 		-----------------------------------------------------------------------------
 		-- LM73
 		-----------------------------------------------------------------------------
-		0	=> (AutoRead => '1', AutoWrite => '0', HasMux => '0', MuxAddr => X"00", MuxValue => X"00", DevAddr => X"48", CmdBytes => 1, CmdData => X"00000000", DatBytes => 2), -- Temperature
-		1	=> (AutoRead => '0', AutoWrite => '0', HasMux => '0', MuxAddr => X"00", MuxValue => X"00", DevAddr => X"48", CmdBytes => 1, CmdData => X"00000001", DatBytes => 1), -- Config
+		0	=> (AutoRead => '1', AutoWrite => '0', HasMux => '0', MuxAddr => X"00", MuxValue => X"00", DevAddr => X"48", CmdBytes => 1, CmdData => X"00000000", DatBytes => 2, DataLSByteFirst => '0'), -- Temperature
+		1	=> (AutoRead => '0', AutoWrite => '0', HasMux => '0', MuxAddr => X"00", MuxValue => X"00", DevAddr => X"48", CmdBytes => 1, CmdData => X"00000001", DatBytes => 1, DataLSByteFirst => '0'), -- Config
 
 		-----------------------------------------------------------------------------
 		-- LM73 behind Mux
 		-----------------------------------------------------------------------------
-		16	=> (AutoRead => '1', AutoWrite => '0', HasMux => '1', MuxAddr => X"A0", MuxValue => X"20", DevAddr => X"48", CmdBytes => 1, CmdData => X"00000000", DatBytes => 2), -- Temperature
-		17	=> (AutoRead => '0', AutoWrite => '0', HasMux => '1', MuxAddr => X"A0", MuxValue => X"20", DevAddr => X"48", CmdBytes => 1, CmdData => X"00000001", DatBytes => 1), -- Config
+		16	=> (AutoRead => '1', AutoWrite => '0', HasMux => '1', MuxAddr => X"A0", MuxValue => X"20", DevAddr => X"48", CmdBytes => 1, CmdData => X"00000000", DatBytes => 2, DataLSByteFirst => '0'), -- Temperature
+		17	=> (AutoRead => '0', AutoWrite => '0', HasMux => '1', MuxAddr => X"A0", MuxValue => X"20", DevAddr => X"48", CmdBytes => 1, CmdData => X"00000001", DatBytes => 1, DataLSByteFirst => '0'), -- Config
 
 		-- << END_ROM_CONTENT >>
-		others 	=> (AutoRead => '0', AutoWrite => '0', HasMux => '0',	MuxAddr => X"00", 	MuxValue => X"00", 	DevAddr => X"00",	CmdBytes => 0,	CmdData => X"00000000",	DatBytes => 0)
+		others 	=> (AutoRead => '0', AutoWrite => '0', HasMux => '0',	MuxAddr => X"00", 	MuxValue => X"00", 	DevAddr => X"00",	CmdBytes => 0,	CmdData => X"00000000",	DatBytes => 0, DataLSByteFirst => '0')
 	); 	
 	
 	-- Constants

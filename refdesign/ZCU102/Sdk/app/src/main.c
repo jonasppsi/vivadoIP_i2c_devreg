@@ -39,7 +39,7 @@ void IrqHandler(void* arg)
 	uint32_t value;
 	//The part number is constant
 	I2cDevReg_RegGet(XPAR_I2C_DEVREG_0_BASEADDR, ZCU102_I2C1_SI5341_PARTNUMBER, &value);
-	printf("Part Number: %04x\n", value);
+	printf("Part Number (expected 5341): %04x\n", value);
 	//This register is modfied with every IRQ
 	I2cDevReg_RegGet(XPAR_I2C_DEVREG_0_BASEADDR, ZCU102_I2C1_SI5341_LOSIN_MASK, &value);
 	printf("Counter Register: %d\n", value);
@@ -87,7 +87,7 @@ int main()
 	Init();
 
 	while(true){
-
+		//Empty while loop, all actions happen in IRQ context
 	}
 
 	return 0;

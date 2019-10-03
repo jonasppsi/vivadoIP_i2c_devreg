@@ -4,6 +4,8 @@
 # ----------------------------------------------------------
 import re
 from typing import Iterable, Tuple
+from enum import Enum
+
 
 __all__ = ["Device", "Register", "Component"]
 
@@ -18,7 +20,8 @@ class Register:
     This class encapsulates the information about an I2C device register
     """
 
-    def __init__(self, name : str, cmdBytes : int = 0, cmd : int = 0, dataBytes : int = 0, autoRead : bool = False, autoWrite : bool = False):
+    def __init__(self, name : str, cmdBytes : int = 0, cmd : int = 0, dataBytes : int = 0,
+                 autoRead : bool = False, autoWrite : bool = False, dataLsByteFirst : bool = False):
         """
         Constructor
 
@@ -35,6 +38,7 @@ class Register:
         self.dataBytes = dataBytes
         self.autoRead = autoRead
         self.autoWrite = autoWrite
+        self.dataLsByteFirst = dataLsByteFirst
         if autoWrite and autoRead:
             raise Exception("A register can only be autoRead or autoWrite, not both!")
 
@@ -131,8 +135,8 @@ class Component:
                 else:
                     usedIndexes.append(thisIdx)
                 #Create header Line
-                hdrStr += "#define {:40} 0x{:08x} // DataBytes = {}, CmdBytes = {}, Cmd = 0x{:08x}, AutoRead = {}, AutoWrite = {}"\
-                    .format("{}_{}_{}".format(CharConv(self.name), CharConv(dev.name), CharConv(reg.name)), thisIdx, reg.dataBytes, reg.cmdBytes, reg.cmd, reg.autoRead, reg.autoWrite)
+                hdrStr += "#define {:40} 0x{:08x} // DataBytes = {}, CmdBytes = {}, Cmd = 0x{:08x}, AutoRead = {}, AutoWrite = {}, DataLSByteFirst = {}"\
+                    .format("{}_{}_{}".format(CharConv(self.name), CharConv(dev.name), CharConv(reg.name)), thisIdx, reg.dataBytes, reg.cmdBytes, reg.cmd, reg.autoRead, reg.autoWrite, reg.dataLsByteFirst)
                 hdrStr += "\n"
 
         with open(path, "r") as f:
@@ -184,11 +188,11 @@ class Component:
                             "AutoRead => {autoRd}, AutoWrite => {autoWr}, HasMux => {hasMux}, " +
                             "MuxAddr => X\"{muxAddr:02X}\", MuxValue => X\"{muxValue:02X}\", " +
                             "DevAddr => X\"{devAddr:02X}\", CmdBytes => {cmdBytes}, CmdData => X\"{cmdData:08X}\", "+
-                            "DatBytes => {datBytes}), -- {comment}\n")\
+                            "DatBytes => {datBytes}, DataLSByteFirst => {dataLsbFirst}), -- {comment}\n")\
                             .format(idx=thisIdx, autoRd=BoolToStdl(reg.autoRead), autoWr=BoolToStdl(reg.autoWrite),
                                     hasMux=BoolToStdl(dev.hasMux), muxAddr=dev.muxAddr, muxValue=dev.muxValue,
                                     devAddr=dev.devAddr, cmdBytes=reg.cmdBytes, cmdData=reg.cmd, datBytes=reg.dataBytes,
-                                    comment=reg.name)
+                                    dataLsbFirst=BoolToStdl(reg.dataLsByteFirst) ,comment=reg.name)
             vhdlStr += "\n"
 
         #Substitute Content in VHDL file

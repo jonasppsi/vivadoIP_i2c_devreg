@@ -131,31 +131,31 @@ architecture sim of i2c_devreg_tb is
 	-- ROM Contents
 	constant ROM_NOMUX_NOCMD_1DATA : CfgRomEntry_t :=  (	
 		HasMux => '0',  MuxAddr => (others => 'X'), MuxValue => (others => 'X'), DevAddr => AddrSlv(SLAVE_ADDR),  
-		CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 1, AutoRead => '1', AutoWrite => '0');
+		CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 1, AutoRead => '1', AutoWrite => '0', DataLSByteFirst => '0');
 
 	constant ROM_1MUX_NOCMD_1DATA : CfgRomEntry_t := (
 		HasMux => '1',  MuxAddr => AddrSlv(MUX_ADDR), MuxValue => MUX_VAL_SLV, DevAddr => AddrSlv(SLAVE_ADDR),  
-		CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 1, AutoRead => '1', AutoWrite => '0');
+		CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 1, AutoRead => '1', AutoWrite => '0', DataLSByteFirst => '0');
 		
 	constant ROM_NOMUX_1CMD_1DATA : CfgRomEntry_t := (
 		HasMux => '0',  MuxAddr => (others => 'X'), MuxValue => (others => 'X'), DevAddr => AddrSlv(SLAVE_ADDR),  
-		CmdBytes => 1, CmdData => CMD_BYTES(1), DatBytes => 1, AutoRead => '1', AutoWrite => '0');
+		CmdBytes => 1, CmdData => CMD_BYTES(1), DatBytes => 1, AutoRead => '1', AutoWrite => '0', DataLSByteFirst => '0');
 		
 	constant ROM_NOMUX_2CMD_NODATA : CfgRomEntry_t := (
 		HasMux => '0',  MuxAddr => (others => 'X'), MuxValue => (others => 'X'), DevAddr => AddrSlv(SLAVE_ADDR),  
-		CmdBytes => 2, CmdData => CMD_BYTES(2), DatBytes => 0, AutoRead => '1', AutoWrite => '0');
+		CmdBytes => 2, CmdData => CMD_BYTES(2), DatBytes => 0, AutoRead => '1', AutoWrite => '0', DataLSByteFirst => '0');
 
 	constant ROM_1MUX_2CMD_1DATA : CfgRomEntry_t := (
 		HasMux => '1',  MuxAddr => AddrSlv(MUX_ADDR), MuxValue => MUX_VAL_SLV, DevAddr => AddrSlv(SLAVE_ADDR),  
-		CmdBytes => 2, CmdData => CMD_BYTES(2), DatBytes => 1, AutoRead => '1', AutoWrite => '0');
+		CmdBytes => 2, CmdData => CMD_BYTES(2), DatBytes => 1, AutoRead => '1', AutoWrite => '0', DataLSByteFirst => '0');
 		
 	constant ROM_NOMUX_NOCMD_4DATA : CfgRomEntry_t := (
 		HasMux => '0',  MuxAddr => (others => 'X'), MuxValue => (others => 'X'), DevAddr => AddrSlv(SLAVE_ADDR),  
-		CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 4, AutoRead => '1', AutoWrite => '0');
+		CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 4, AutoRead => '1', AutoWrite => '0', DataLSByteFirst => '0');
 		
 	constant ROM_UNUSED : CfgRomEntry_t := (
 		HasMux => '0',  MuxAddr => (others => 'X'), MuxValue => (others => 'X'), DevAddr => (others => 'X'),
-		CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 0, AutoRead => '0', AutoWrite => '0');
+		CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 0, AutoRead => '0', AutoWrite => '0', DataLSByteFirst => '0');
 	
 	shared variable CfgRom : CfgRom_t(0 to 2**log2ceil(NumOfReg_g)-1) := (others => ROM_UNUSED);
 	
@@ -371,7 +371,7 @@ begin
 		for i in 1 to 4 loop
 			wait for 5 us;
 			CfgRom(1) := (	HasMux => '0',  MuxAddr => (others => 'X'), MuxValue => (others => 'X'), DevAddr => AddrSlv(SLAVE_ADDR),  
-							CmdBytes => i, CmdData => CMD_BYTES(i), DatBytes => 1, AutoRead => '1', AutoWrite => '0');
+							CmdBytes => i, CmdData => CMD_BYTES(i), DatBytes => 1, AutoRead => '1', AutoWrite => '0', DataLSByteFirst => '0');
 			PulseSig(UpdateTrig, Clk);
 			wait for 1 us;
 			ClockedWaitFor('1', UpdateDone, Clk);
@@ -727,6 +727,33 @@ begin
 		TestMemContent(1, DATA_OFFS+5, Clk, RegAddr, RegDout, "Wrong data");	
 		
 		WaitForCase(I2cCase, 8);		
+		wait for 10 us;	
+
+		-- *** Test LSB First Byte Order ***
+		print(">> Test LSB First Byte Order ");
+		CfgRom := (others => ROM_UNUSED);		
+		StimCase <= 9;	
+		wait until rising_edge(Clk);
+		
+		-- 4 Byte, no Mux, no command bytes 
+		wait for 5 us;
+		CfgRom(1) := ROM_NOMUX_NOCMD_4DATA;
+		CfgRom(1).DataLSByteFirst := '1';
+		PulseSig(UpdateTrig, Clk);
+		wait for 1 us;
+		ClockedWaitFor('1', UpdateDone, Clk);
+		-- Bytes are sent in reverse order by slave, so they should be available in normal order here
+		TestMemContent(1, DATA32, Clk, RegAddr, RegDout, "A");	
+		
+		-- Test Auto Write
+		CfgRom(1).AutoRead := '0';
+		CfgRom(1).AutoWrite := '1';
+		WaitClockCycles(5, Clk);
+		PulseSig(UpdateTrig, Clk);
+		WaitClockCycles(10, Clk);
+		ClockedWaitFor('0', BusBusy, Clk);
+
+		WaitForCase(I2cCase, 9);		
 		wait for 10 us;			
 
 		wait for 100 us;
@@ -1011,6 +1038,30 @@ begin
 		Slave_NOMUX_NOCMD_1DATA(I2cScl, I2cSda, "A", DataOffs => 5);
 
 		I2cCase <= 8;
+		
+		-- *** Test LSB First Byte Order ***
+		WaitForCase(StimCase, 9);
+	
+		-- 4 Byte, no Mux, no command bytes
+		I2cSlaveWaitStart(I2cScl, I2cSda, "A Start");
+		I2cSlaveExpectByte(I2cGetAddr(SLAVE_ADDR, I2c_READ), I2cScl, I2cSda, "A DataAddr", I2c_ACK);
+		-- send in reverse byte order
+		for i in 3 downto 1 loop
+			I2cSlaveSendByte(DATA_OFFS+i, I2cScl, I2cSda, "A DataData " & to_string(i), I2c_ACK);
+		end loop;
+		I2cSlaveSendByte(DATA_OFFS+0, I2cScl, I2cSda, "A DataData 0", I2c_NACK);
+		I2cSlaveWaitStop(I2cScl, I2cSda, "A Stop");	
+		
+		-- Test Auto Write
+		I2cSlaveWaitStart(I2cScl, I2cSda, "B Start");
+		I2cSlaveExpectByte(I2cGetAddr(SLAVE_ADDR, I2c_WRITE), I2cScl, I2cSda, "B DataAddr", I2c_ACK);
+		-- send in reverse byte order
+		for i in 3 downto 0 loop
+			I2cSlaveExpectByte(DATA_OFFS+i, I2cScl, I2cSda, "B DataData " & to_string(i), I2c_ACK);
+		end loop;
+		I2cSlaveWaitStop(I2cScl, I2cSda, "B Stop");	
+		
+		I2cCase <= 9;
 		
 		-- end of process !DO NOT EDIT!
 		ProcessDone(TbProcNr_i2c_c) <= '1';

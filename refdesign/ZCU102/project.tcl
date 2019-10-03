@@ -165,12 +165,6 @@ set files [list \
 ]
 add_files -norecurse -fileset $obj $files
 
-# Import local files from the original project
-set files [list \
- [file normalize "${origin_dir}/RefDesign/RefDesign.srcs/sources_1/imports/hdl/system_wrapper.vhd"]\
-]
-set imported_files [import_files -fileset sources_1 $files]
-
 # Set 'sources_1' fileset file properties for remote files
 set file "$origin_dir/src/system_wrapper.vhd"
 set file [file normalize $file]
@@ -179,10 +173,7 @@ set_property -name "file_type" -value "VHDL" -objects $file_obj
 
 
 # Set 'sources_1' fileset file properties for local files
-set file "hdl/system_wrapper.vhd"
-set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
-set_property -name "file_type" -value "VHDL" -objects $file_obj
-
+# None
 
 # Set 'sources_1' fileset properties
 set obj [get_filesets sources_1]

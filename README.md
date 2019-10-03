@@ -24,7 +24,7 @@ Alternatively the repository [psi\_fpga\_all](https://github.com/paulscherrerins
   * [PsiSim](https://github.com/paulscherrerinstitute/PsiSim) (2.2.0 or higher, for development only)
   * [PsiIpPackage](https://github.com/paulscherrerinstitute/PsiIpPackage) (2.0.0, for development only )
 * VHDL
-  * [psi\_common](https://github.com/paulscherrerinstitute/psi_common) (2.6.1 or higher)
+  * [psi\_common](https://github.com/paulscherrerinstitute/psi_common) (2.6.2 or higher)
   * [psi\_tb](https://github.com/paulscherrerinstitute/psi_tb) (2.4.0 or higher, for development only)
 * VivadoIp
   * [**vivadoIP\_i2c\_devreg**](https://github.com/paulscherrerinstitute/vivadoIP_i2c_devreg)

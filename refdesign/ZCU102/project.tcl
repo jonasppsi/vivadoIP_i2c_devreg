@@ -33,7 +33,7 @@
 #*****************************************************************************************
 
 # Set the reference directory for source file relative paths (by default the value is script directory path)
-set origin_dir "D:/gfa/Libraries/Firmware/VivadoIp/vivadoIp_i2c_devreg/refdesign/ZCU102"
+set origin_dir "."
 
 # Use origin directory path location variable, if specified in the tcl shell
 if { [info exists ::origin_dir_loc] } {

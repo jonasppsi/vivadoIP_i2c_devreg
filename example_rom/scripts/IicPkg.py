@@ -21,7 +21,7 @@ class Register:
     """
 
     def __init__(self, name : str, cmdBytes : int = 0, cmd : int = 0, dataBytes : int = 0,
-                 autoRead : bool = False, autoWrite : bool = False, dataLsByteFirst : bool = False):
+                 autoRead : bool = False, autoWrite : bool = False, dataLsByteFirst : bool = False, comment : str = None):
         """
         Constructor
 
@@ -39,6 +39,7 @@ class Register:
         self.autoRead = autoRead
         self.autoWrite = autoWrite
         self.dataLsByteFirst = dataLsByteFirst
+        self.comment = comment
         if autoWrite and autoRead:
             raise Exception("A register can only be autoRead or autoWrite, not both!")
 
@@ -71,6 +72,15 @@ class Device:
         :param reg: Register to add
         """
         self.registers.append(reg)
+        return self
+
+    def AddMultiRegisters(self, regs : Iterable[Register]):
+        """
+        Add multiple registers to the device
+        :param regs: Registers to add (as iterable)
+        """
+        for reg in regs:
+            self.AddRegister(reg)
         return self
 
     def _GetAllRegisters(self) -> Iterable[Register]:
@@ -137,6 +147,8 @@ class Component:
                 #Create header Line
                 hdrStr += "#define {:40} 0x{:08x} // DataBytes = {}, CmdBytes = {}, Cmd = 0x{:08x}, AutoRead = {}, AutoWrite = {}, DataLSByteFirst = {}"\
                     .format("{}_{}_{}".format(CharConv(self.name), CharConv(dev.name), CharConv(reg.name)), thisIdx, reg.dataBytes, reg.cmdBytes, reg.cmd, reg.autoRead, reg.autoWrite, reg.dataLsByteFirst)
+                if reg.comment is not None:
+                    hdrStr += " Comment: {}".format(reg.comment)
                 hdrStr += "\n"
 
         with open(path, "r") as f:
@@ -188,11 +200,14 @@ class Component:
                             "AutoRead => {autoRd}, AutoWrite => {autoWr}, HasMux => {hasMux}, " +
                             "MuxAddr => X\"{muxAddr:02X}\", MuxValue => X\"{muxValue:02X}\", " +
                             "DevAddr => X\"{devAddr:02X}\", CmdBytes => {cmdBytes}, CmdData => X\"{cmdData:08X}\", "+
-                            "DatBytes => {datBytes}, DataLSByteFirst => {dataLsbFirst}), -- {comment}\n")\
+                            "DatBytes => {datBytes}, DataLSByteFirst => {dataLsbFirst}), -- {comment}")\
                             .format(idx=thisIdx, autoRd=BoolToStdl(reg.autoRead), autoWr=BoolToStdl(reg.autoWrite),
                                     hasMux=BoolToStdl(dev.hasMux), muxAddr=dev.muxAddr, muxValue=dev.muxValue,
                                     devAddr=dev.devAddr, cmdBytes=reg.cmdBytes, cmdData=reg.cmd, datBytes=reg.dataBytes,
                                     dataLsbFirst=BoolToStdl(reg.dataLsByteFirst) ,comment=reg.name)
+                if reg.comment is not None:
+                    vhdlStr += " - {}".format(reg.comment)
+                vhdlStr += "\n"
             vhdlStr += "\n"
 
         #Substitute Content in VHDL file

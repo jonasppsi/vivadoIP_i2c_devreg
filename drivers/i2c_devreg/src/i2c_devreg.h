@@ -6,6 +6,10 @@
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //*******************************************************************************
 // Includes
 //*******************************************************************************
@@ -154,6 +158,10 @@ I2cDevReg_ErrCode I2cDevReg_IsFifoEmpty(const uint32_t baseAddr, bool* const isE
  * @param isFull_p		Result: True = FIFO is full, False = FIFO is not full
  */
 I2cDevReg_ErrCode I2cDevReg_IsFifoFull(const uint32_t baseAddr, bool* const isFull_p);
+
+#ifdef __cplusplus
+}
+#endif
 
 
 

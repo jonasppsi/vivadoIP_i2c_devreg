@@ -505,7 +505,7 @@ begin
 		PulseSig(UpdateTrig, Clk);
 		ClockedWaitFor('1', AccessFailed, Clk);
 		ClockedWaitFor('1', UpdateDone, Clk);
-		TestMemContent(1, 16#FFFFFFFF#, Clk, RegAddr, RegDout);		
+		TestMemContent(1, -1, Clk, RegAddr, RegDout);	-- use -1 and not 16#FFFFFFFF# because the hex notation is interpreted as unsigned and violates bounds	
 		wait for 5 us;
 		
 		-- Test NACK failed (multi)
@@ -514,7 +514,7 @@ begin
 		PulseSig(UpdateTrig, Clk);
 		ClockedWaitFor('1', AccessFailed, Clk);
 		ClockedWaitFor('1', UpdateDone, Clk);
-		TestMemContent(1, 16#FFFFFFFF#, Clk, RegAddr, RegDout, "1");
+		TestMemContent(1, -1, Clk, RegAddr, RegDout, "1"); -- use -1 and not 16#FFFFFFFF# because the hex notation is interpreted as unsigned and violates bounds
 		TestMemContent(2, DATA_OFFS+0, Clk, RegAddr, RegDout, "2");
 		CfgRom := (others => ROM_UNUSED);
 					
@@ -626,7 +626,7 @@ begin
 		StdlCompare(0, RegFifoEmpty, "FIFO empty");
 		ClockedWaitFor('1', AccessFailed, Clk);
 		ClockedWaitFor('1', RegFifoEmpty, Clk);
-		TestMemContent(1, 16#FFFFFFFF#, Clk, RegAddr, RegDout, "NACK retry failing");	
+		TestMemContent(1, -1, Clk, RegAddr, RegDout, "NACK retry failing");	-- use -1 and not 16#FFFFFFFF# because the hex notation is interpreted as unsigned and violates bounds
 		wait for 5 us;			
 
 		WaitForCase(I2cCase, 6);		
@@ -697,7 +697,7 @@ begin
 		StdlCompare(0, RegFifoEmpty, "FIFO empty");
 		ClockedWaitFor('1', AccessFailed, Clk);
 		ClockedWaitFor('1', RegFifoEmpty, Clk);
-		TestMemContent(1, 16#FFFFFFFF#, Clk, RegAddr, RegDout, "NACK fail");	
+		TestMemContent(1, -1, Clk, RegAddr, RegDout, "NACK fail");	 -- use -1 and not 16#FFFFFFFF# because the hex notation is interpreted as unsigned and violates bounds
 		wait for 5 us;
 		
 		-- NACK Data

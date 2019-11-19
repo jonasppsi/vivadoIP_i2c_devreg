@@ -58,10 +58,16 @@ psi::sim::create_tb_run "i2c_devreg_tb"
 tb_run_add_arguments \
 	"-gInternalTriState_g=true" \
 	"-gInternalTriState_g=false"
+#a GHDL bug prevents this TB to run in Version 0.36. The bug is reportet. Maybe test again in future.
+tb_run_skip GHDL
 psi::sim::add_tb_run
 
 psi::sim::create_tb_run "i2c_multi_devreg_tb"
+#a GHDL bug prevents this TB to run in Version 0.36. The bug is reportet. Maybe test again in future.
+tb_run_skip GHDL
 psi::sim::add_tb_run
 
 psi::sim::create_tb_run "top_tb"
+#a GHDL bug prevents this TB to run in Version 0.36. The bug is reportet. Maybe test again in future.
+tb_run_skip GHDL
 psi::sim::add_tb_run

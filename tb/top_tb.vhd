@@ -273,7 +273,7 @@ begin
 		end loop;
 		-- Check values
 		axi_single_expect(RegIdx_AccessFailed_c*4, 1, axi_ms, axi_sm, aclk, "Fail-bit not set");	
-		axi_single_expect((RegIdx_Mem_c+1)*4, 16#FFFFFFFF#, axi_ms, axi_sm, aclk, "Wrong value on fail");
+		axi_single_expect((RegIdx_Mem_c+1)*4, -1, axi_ms, axi_sm, aclk, "Wrong value on fail"); -- use -1 and not 16#FFFFFFFF# because the hex notation is interpreted as unsigned and violates bounds
 		axi_single_write(RegIdx_AccessFailed_c*4, 1, axi_ms, axi_sm, aclk);
 		axi_single_expect(RegIdx_AccessFailed_c*4, 0, axi_ms, axi_sm, aclk, "Fail-bit not cleared");
 		ClockedWaitTime(10 us, aclk);

@@ -1,3 +1,9 @@
+## 1.1.1
+
+* Bugfixes
+  * Disable simulations that do not work for GHDL
+  * Prevent BusBusy from spuriously going low
+
 ## 1.1.0
 
 * Added Features

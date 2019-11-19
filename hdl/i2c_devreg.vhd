@@ -98,6 +98,7 @@ architecture rtl of i2c_devreg is
 	constant RomAddrBits_c		: integer	:= log2ceil(NumOfReg_g);
 	constant I2cRetrys_c		: integer	:= 1;
 	constant OpFifoDepth_c		: integer	:= 256;
+	constant BusIdleDelayCyc_c	: integer	:= 20;	-- Bus busy is going low if the bus is idle for 20 cycles to prevent short low-periods
 	
 	-- *** Two Process Method ***
 	type two_process_r is record
@@ -127,6 +128,8 @@ architecture rtl of i2c_devreg is
 		WriteData		: std_logic_vector(31 downto 0);
 		IsWriteAccess	: std_logic;
 		AccessFailed	: std_logic;
+		BusBusy			: std_logic;
+		BusBusyCnt		: integer range 0 to BusIdleDelayCyc_c-1;
 	end record;
 	signal r, r_next : two_process_r;	
 	
@@ -169,6 +172,16 @@ begin
 			else
 				v.UpdateCnt		:= r.UpdateCnt + 1;
 			end if;	
+		end if;
+		
+		-- *** Bus Busy Detection ***
+		if I2cBusBusy = '1' then
+			v.BusBusy := '1';
+			v.BusBusyCnt := BusIdleDelayCyc_c-1;
+		elsif r.BusBusyCnt = 0 then
+			v.BusBusy := '0';
+		else
+			v.BusBusyCnt := r.BusBusyCnt - 1;
 		end if;
 		
 		-- *** Default Values ***
@@ -486,7 +499,7 @@ begin
 	RegFifoEmpty <= FifoEmptyI;
 	AccessFailed <= r.AccessFailed;
 	UpdateOngoing <= r.UpdatePending;
-	BusBusy <= I2cBusBusy;
+	BusBusy <= r.BusBusy;
 	
 	--------------------------------------------------------------------------
 	-- Sequential Proccess
@@ -504,6 +517,8 @@ begin
 				r.RamWr				<= '0';
 				r.UpdateDone		<= '0';
 				r.FifoPop			<= '0';
+				r.BusBusy		<= '0';
+				r.BusBusyCnt		<= 0;
 			end if;			
 		end if;
 	end process;

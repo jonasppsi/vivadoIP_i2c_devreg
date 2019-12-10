@@ -385,6 +385,7 @@ begin
 					v.FsmNext		:= CmdValue_s;
 					v.Fsm 			:= ApplyCmd_s;
 				end if;
+				
 			
 			when CmdValue_s =>
 				v.I2cCmdType		:= CMD_SEND;
@@ -396,7 +397,7 @@ begin
 						v.FsmNext	:= CmdRepStart_s;
 					-- But not for writes
 					else
-						v.FsmNext	:= DataValue_s;
+						v.FsmNext		:= DataAddr_s; -- Do not go to DataValue_s directly because some initialization is done in DataAddr_s that is required also without address
 					end if;
 				else
 					v.ByteCnt	:= r.ByteCnt - 1;
@@ -412,18 +413,25 @@ begin
 			-- Data Handling
 			---------------------------------------------------------------------
 			when DataAddr_s =>
+				-- General initialization of the data phase
 				v.RecData	:= (others => '0');
+	
 				-- Skip if no data bytes
 				if r.RomEntry.DatBytes = 0 then
 					v.Fsm	:= Stop_s;
-				-- Apply Address otherwise
-				else
+				-- Go to Value if no address required
+				elsif (r.IsWriteAccess = '1') and (r.RomEntry.CmdBytes /= 0) then
+					v.Fsm 			:= DataValue_s;
+					v.DByteNumber	:= 0;
 					v.ByteCnt 		:= r.RomEntry.DatBytes-1;
-					v.DByteNumber	:= -1;
+				-- Apply Address otherwise
+				else									
 					v.I2cCmdType	:= CMD_SEND;	
 					v.I2cCmdData	:= r.RomEntry.DevAddr(6 downto 0) & not r.IsWriteAccess;	
 					v.FsmNext		:= DataValue_s;
 					v.Fsm 			:= ApplyCmd_s;
+					v.DByteNumber	:= -1; -- Incremented to zero after address is sent
+					v.ByteCnt 		:= r.RomEntry.DatBytes-1;
 				end if;				
 				
 			when DataValue_s =>

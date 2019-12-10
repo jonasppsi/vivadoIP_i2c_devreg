@@ -156,6 +156,10 @@ architecture sim of i2c_devreg_tb is
 	constant ROM_UNUSED : CfgRomEntry_t := (
 		HasMux => '0',  MuxAddr => (others => 'X'), MuxValue => (others => 'X'), DevAddr => (others => 'X'),
 		CmdBytes => 0, CmdData => (others => 'X'), DatBytes => 0, AutoRead => '0', AutoWrite => '0', DataLSByteFirst => '0');
+		
+	constant ROM_1MUX_1CMD_3DATA_LSBFIRST : CfgRomEntry_t := (
+		HasMux => '1',  MuxAddr => AddrSlv(MUX_ADDR), MuxValue => MUX_VAL_SLV, DevAddr => AddrSlv(SLAVE_ADDR),
+		CmdBytes => 1, CmdData => CMD_BYTES(1), DatBytes => 3, AutoRead => '0', AutoWrite => '0', DataLSByteFirst => '1');
 	
 	shared variable CfgRom : CfgRom_t(0 to 2**log2ceil(NumOfReg_g)-1) := (others => ROM_UNUSED);
 	
@@ -754,7 +758,32 @@ begin
 		ClockedWaitFor('0', BusBusy, Clk);
 
 		WaitForCase(I2cCase, 9);		
-		wait for 10 us;			
+		wait for 10 us;		
+
+		-- *** Error Cases ***
+		print(">> Error Cases");
+		CfgRom := (others => ROM_UNUSED);		
+		StimCase <= 10;	
+		wait until rising_edge(Clk);
+		
+		-- MUX, 1 CMD, 3 DATA, LSB First
+		wait for 5 us;
+		CfgRom(1) := ROM_1MUX_1CMD_3DATA_LSBFIRST;
+		wait for 1 us;
+		wait until rising_edge(Clk);
+		RegAddr <= std_logic_vector(to_unsigned(1, RegAddr'length));
+		RegDin  <= std_logic_vector(to_unsigned(16#33EFCDAB#, 32));
+		PulseSig(RegI2cWrite, Clk);
+		RegAddr <= (others => 'X');
+		RegDin <= (others => 'X');
+		WaitClockCycles(5, Clk);
+		StdlCompare(0, RegFifoEmpty, "FIFO empty");
+		ClockedWaitFor('1', RegFifoEmpty, Clk);
+		TestMemContent(1, 16#33EFCDAB#, Clk, RegAddr, RegDout, "Single Write");	
+		wait for 5 us;	
+
+		WaitForCase(I2cCase, 10);		
+		wait for 10 us;	
 
 		wait for 100 us;
 		
@@ -1062,6 +1091,24 @@ begin
 		I2cSlaveWaitStop(I2cScl, I2cSda, "B Stop");	
 		
 		I2cCase <= 9;
+		
+		-- *** Test Error Cases ***
+		WaitForCase(StimCase, 10);
+	
+		-- MUX, 1 CMD, 3 DATA, LSB First
+		I2cSlaveWaitStart(I2cScl, I2cSda, "A Start Mux");
+		I2cSlaveExpectByte(I2cGetAddr(MUX_ADDR, I2c_WRITE), I2cScl, I2cSda, "A MuxAddr", I2c_ACK);
+		I2cSlaveExpectByte(MUX_VAL, I2cScl, I2cSda, "A MuxVal", I2c_ACK);
+		I2cSlaveWaitStop(I2cScl, I2cSda, "A Stop Mux");
+		I2cSlaveWaitStart(I2cScl, I2cSda, "A Start Data");
+		I2cSlaveExpectByte(I2cGetAddr(SLAVE_ADDR, I2c_WRITE), I2cScl, I2cSda, "A DataAddr", I2c_ACK);
+		I2cSlaveExpectByte(CMD_OFFS, I2cScl, I2cSda, "A Command", I2c_ACK);
+		I2cSlaveExpectByte(16#AB#, I2cScl, I2cSda, "A Data0", I2c_ACK);
+		I2cSlaveExpectByte(16#CD#, I2cScl, I2cSda, "A Data1", I2c_ACK);
+		I2cSlaveExpectByte(16#EF#, I2cScl, I2cSda, "A Data2", I2c_ACK);
+		I2cSlaveWaitStop(I2cScl, I2cSda, "A Stop Mux");
+		
+		I2cCase <= 10;		
 		
 		-- end of process !DO NOT EDIT!
 		ProcessDone(TbProcNr_i2c_c) <= '1';

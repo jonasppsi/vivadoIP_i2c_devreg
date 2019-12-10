@@ -1,3 +1,8 @@
+## 1.1.2
+
+* Bugfixes
+  * Fixed erroneous behavior for Writes if with CMD-BYTES != 0 and LsbFirst = True
+
 ## 1.1.1
 
 * Bugfixes

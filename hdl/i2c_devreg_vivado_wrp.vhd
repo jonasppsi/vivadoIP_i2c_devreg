@@ -131,6 +131,8 @@ architecture rtl of i2c_devreg_vivado_wrp is
 	constant BusBusyTimeout_g	: real	:= real(BusBusyTimeoutUs_g)*1.0e-6;		-- in sec		
 	constant UpdatePeriod_g		: real	:= real(UpdatePeriodMs_g)*1.0e-3;		-- in sec	
 
+  constant SEC_COUNTER_LIMIT : integer := integer(ClockFrequency_g);
+
 	-- Array of desired number of chip enables for each address range
 	constant USER_SLV_NUM_REG   : integer              := RegIdx_Mem_c; 
 	
@@ -168,6 +170,13 @@ architecture rtl of i2c_devreg_vivado_wrp is
 	signal IrqVecI				: std_logic_vector(31 downto 0);
 	signal IrqEnaI				: std_logic_vector(31 downto 0);
 	signal FifoEmptyLast		: std_logic;
+
+  -- Statistics:
+  signal BusBusyCount, BusBusyCountLatch, UpdateTrigCount, UpdateTrigCountLatch, TrigWhileBusyCount : unsigned(31 downto 0);
+  signal BusBusyCountMax  : unsigned(31 downto 0);
+  signal SecCounter : unsigned(31 downto 0);
+  signal SecTick : std_logic;
+
 begin
 
 	AxiRst <= not s00_axi_aresetn;
@@ -262,6 +271,10 @@ begin
 	
 	reg_rdata(RegIdx_UpdateEna_c)(0)						<= UpdateEnaI;
 	reg_rdata(RegIdx_BusBusy_c)(0)							<= BusBusyI;
+  reg_rdata(RegIdx_BusBusyCount_c)					<= std_logic_vector(BusBusyCountLatch);
+	reg_rdata(RegIdx_BusBusyCountMax_c)				<= std_logic_vector(BusBusyCountMax);
+	reg_rdata(RegIdx_TrigWhileBusyCount_c)				<= std_logic_vector(TrigWhileBusyCount);
+  reg_rdata(RegIdx_UpdateTrigCount_c)					<= std_logic_vector(UpdateTrigCountLatch);
 	reg_rdata(RegIdx_AccessFailed_c)(0)						<= AccessFailedLatch;
 	reg_rdata(RegIdx_FifoState_c)(BitIdx_FifoState_Empty_c)	<= RegFifoEmptyI;
 	reg_rdata(RegIdx_FifoState_c)(BitIdx_FifoState_Full_c)	<= RegFifoFullI;
@@ -320,7 +333,63 @@ begin
 	MemWrI <= '1' when mem_wr /= "0000" else '0';
 	
 	Irq <= IrqI;
-	
+
+  --------------------------------------------------------------------------
+  -- Statistics Counters
+  --------------------------------------------------------------------------
+  blk_stat : block
+  begin
+
+    p_stat : process(s00_axi_aclk)
+    begin
+
+      if rising_edge(s00_axi_aclk) then
+        -- 1 Sec Counter:
+        SecTick <= '0';
+        if (SecCounter = SEC_COUNTER_LIMIT-1) then
+          SecCounter <= (others=>'0');
+          SecTick <= '1';
+        else 
+          SecCounter <= SecCounter + 1;
+        end if;
+
+        if (BusBusyI = '1' and std_logic_vector(BusBusyCount) /= x"FFFFFFFF") then
+          BusBusyCount <= BusBusyCount + 1;
+        end if;
+   
+        -- Max Busy Time:
+        if (BusBusyCount > BusBusyCountMax) then
+          BusBusyCountMax <= BusBusyCount;
+        end if;
+
+        if (SecTick = '1') then
+        --if (UpdateTrigI = '1') then
+          BusBusyCountLatch <= BusBusyCount;
+          UpdateTrigCountLatch <= UpdateTrigCount;
+          BusBusyCount <= (others=>'0');
+          UpdateTrigCount <= (others=>'0');
+        end if;
+
+        if (UpdateTrigI = '1')  then
+          UpdateTrigCount <= UpdateTrigCount + 1;
+        end if;
+
+        if (UpdateTrigI = '1' and BusBusyI = '1')  then
+          TrigWhileBusyCount <= TrigWhileBusyCount + 1;
+        end if;
+
+        if (reg_wdata(RegIdx_BusBusyCountMax_c)(0) = '1' and reg_wr(RegIdx_BusBusyCountMax_c) = '1') then
+          BusBusyCountMax <= (others=>'0');
+        end if;
+
+        if (reg_wdata(RegIdx_TrigWhileBusyCount_c)(0) = '1' and reg_wr(RegIdx_TrigWhileBusyCount_c) = '1') then
+          TrigWhileBusyCount <= (others=>'0');
+        end if;
+      end if;
+    end process;
+
+  end block;
+
 	-----------------------------------------------------------------------------
 	-- Implementation
 	-----------------------------------------------------------------------------

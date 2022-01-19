@@ -63,6 +63,10 @@ package i2c_devreg_pkg is
 	constant RegIdx_FifoState_c			: integer	:= 6;
 	constant RegIdx_UpdateOngoing_c		: integer	:= 7;
 	constant RegIdx_ForceRead_c			: integer	:= 8;
+	constant RegIdx_BusBusyCount_c			: integer	:= 9;     -- Bus Busy Time per second
+	constant RegIdx_BusBusyCountMax_c			: integer	:= 10; -- Bus Busy Time Max
+	constant RegIdx_TrigWhileBusyCount_c			: integer	:= 11;     -- Count Triggers while bus busy
+	constant RegIdx_UpdateTrigCount_c			: integer	:= 12;     -- Count update trigger per second
 	constant RegIdx_Mem_c				: integer	:= 16;
 	
 	constant BitIdx_FifoState_Empty_c	: integer	:= 0;
